@@ -28,9 +28,8 @@ El objetivo es observar cómo el **rendimiento** se ve afectado por la **frecuen
 
 ### Gráfico de Resultados 📉
 
-![](Img\tiempoEjecucion.png)
-
-![](Img\speedup.png)
+<image src="Img\tiempoEjecucion.png">
+<image src="Img\speedup.png">
 
 # Conclusiones
 
