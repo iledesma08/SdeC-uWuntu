@@ -1,3 +1,90 @@
+
+# UNIVERSIDAD NACIONAL DE CÓRDOBA
+# FACULTAD DE CIENCIAS EXACTAS, FÍSICAS Y NATURALES
+
+# SISTEMAS DE COMPUTACIÓN	
+## Trabajo Práctico N°1: Rendimiento
+### Grupo: uWuntu
+
+| Nombre |
+|--------|
+| Ledesma, Ignacio |
+| Mouton, Alfonso |
+| Zuñiga, Ivan |
+
+### Docentes
+- Jorge, Javier
+- Solinas, Miguel
+
+### Marzo del 2025
+
+---
+
+## Objetivos
+
+El presente trabajo práctico tiene como objetivos:
+
+1. Aplicar conocimientos sobre performance y rendimiento de computadores en situaciones prácticas.
+
+2. Evaluar y seleccionar benchmarks apropiados para diferentes tareas computacionales, con énfasis en aquellos relevantes para nuestras actividades diarias.
+
+3. Analizar el rendimiento de diferentes procesadores (Intel Core i5-13600K, AMD Ryzen 9 5900X y AMD Ryzen 9 7950X) en tareas específicas como la compilación del kernel de Linux. Para esto, sacamos información de esta página: https://openbenchmarking.org/test/pts/build-linux-kernel-1.15.0
+
+4. Medir el rendimiento de nuestro código propio en una ESP32, cambiando la frecuencia de reloj de la misma y viendo como esto modifica el rendimiento. Documentar esto mediante imágenes y sacar conclusiones
+
+5. Desarrollar criterios para la toma de decisiones informadas sobre hardware basadas en datos de benchmarks.
+
+---
+
+# Benchmarks
+
+Un benchmark es una prueba diseñada para evaluar y comparar el rendimiento de sistemas informáticos o sus componentes. Proporciona datos objetivos sobre la eficiencia y velocidad de hardware o software, lo que facilita la toma de decisiones al elegir los dispositivos o programas más adecuados para tareas específicas.
+
+## Lista de benchmarks
+
+Los benchmarks se clasifican según el componente o aspecto del sistema que se desea evaluar. Algunos de los más comunes incluyen:
+
+### Algunos de ellos son:
+
+- **Benchmarks de CPU**:
+Miden el rendimiento del procesador, tanto en su capacidad single core como multi core, en términos de velocidad de cálculo y capacidad para manejar múltiples tareas simultáneamente. Ejemplos: Cinebench, Geekbench y PassMark.
+
+- **Benchmarks de GPU**:
+Se enfocan en medir la capacidad de procesamiento gráfico de nuestra tarjeta gráfica. Ejemplos: 3DMark, Unigine Heaven y GFXBench.
+
+- **Benchmarks unidades de almacenamiento**:
+Evalúan la velocidad de lectura/escritura y el tiempo de acceso de unidades SSD, HDD y NVMe. Ejemplos: AS SSD Benchmark, ATTO Disk Benchmark y CrystalDiskMark.
+
+- **Benchmarks de RAM**::
+Evalúan la velocidad de acceso y transferencia de datos de la memoria RAM. Ejemplos: MemTest86, RAMMon y AIDA64.
+
+- **Benchmarks de red**::
+Evalúan el rendimiento y velocidad de las conexiones de red, ayudando a diagnosticar problemas de latencia o estabilidad. Ejemplos: comando ping, iPef y traceroute. Páginas como fast.com.
+
+- **Benchmarks de compilación**::
+Dentro de esta categoría entran los benchmarks como el de compilación del kernel de Linux, ampliamente reconocido como estándar para evaluar el rendimiento de sistemas en entornos de desarrollo. Este benchmark representa una carga de trabajo real que somete al sistema a exigencias del procesador, memoria, almacenamiento y eficiencia en sí del compilador.
+
+## Benchmark para tareas cotidianas
+
+Los integrantes del grupo hemos concordado que los benchmarks más útiles para nuestro caso son los siguientes:
+
+- **CPU**: Cinebench r24  
+Nos pareció un benchmark completo y estandarizado que nos permite saber qué tanto rendimiento nos puede dar nuestro CPU en tareas realistas.
+
+- **GPU**: 3DMark Steel Nomad  
+Todos jugamos videojuegos y este benchmark nos da una comparativa frente a otras opciones del mercado de cómo se desempeña nuestra PC en términos de rendimiento gráfico. Nos es útil, también, para encontrar posibles cuellos de botella del CPU.
+
+- **Red**: fast.com  
+Internet es algo que usamos a diario y es fundamental poder identificar la velocidad de la misma.
+
+- **Benchmark específico de juegos (Alfonso e Ignacio)**: Red Dead 2  
+Es útil para saber cómo se comporta nuestra PC frente a un determinado motor gráfico de forma específica.
+
+- **Benchmark específico para rpcs3 (Ivan)**: Passmark Single Thread Benchmark  
+A la hora de emular juegos de PS3 es fundamental tener un rendimiento single core, a diferencia de otras tareas que sustentan esto con el uso de múltiples cores y threads.
+
+---
+
 # Medición de Performance de Código Propio 🖥️📊
 
 Con el objetivo de analizar cómo la **frecuencia del procesador** impacta en el **tiempo de ejecución** de un programa, se desarrolló una prueba controlada utilizando una placa **ESP32** 🛠️, la cual permite modificar dinámicamente la frecuencia del núcleo.
@@ -30,6 +117,8 @@ El objetivo es observar cómo el **rendimiento** se ve afectado por la **frecuen
 
 <image src="Img\tiempoEjecucion.png">
 <image src="Img\speedup.png">
+
+---
 
 # Conclusiones
 
