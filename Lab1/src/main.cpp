@@ -18,7 +18,7 @@ void suma_enteros() {
 void suma_floats() {
   volatile float acc = 0;
   for (int i = 0; i < 100; i++) {
-    acc += (rand() % 100)/rand();
+    acc += (rand() % 100)*0.1f;
   }
 }
 

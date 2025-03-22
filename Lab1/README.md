@@ -9,7 +9,7 @@ El trabajo se divide en **dos partes**:
 ### ✅ Actividades
 
 1. Armar una **lista de benchmarks** útiles para cada integrante del grupo.
-2. Evaluar y comparar el rendimiento de los siguientes procesadores compilando el kernel de Linux::
+2. Evaluar y comparar el rendimiento de los siguientes procesadores compilando el kernel de Linux:
     - Intel Core i5-13600K
     - AMD Ryzen 9 5900X
     - AMD Ryzen 9 7950X (aceleración comparativa)
