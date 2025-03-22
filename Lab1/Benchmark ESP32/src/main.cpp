@@ -1,16 +1,13 @@
 #include <Arduino.h>
 
-#define CPU_MHZ 80
-#define SERIAL_BAUDRATE 115200
-
 // Configurable: cantidad de iteraciones
-const int loop_count = 100000;
+const int loop_count = 1000000;
 
 // Función con sumas de enteros
 void suma_enteros() {
   volatile int acc = 0;
   for (int i = 0; i < 100; i++) {
-    acc += rand() % 100;
+    acc += 1;
   }
 }
 
@@ -18,16 +15,16 @@ void suma_enteros() {
 void suma_floats() {
   volatile float acc = 0;
   for (int i = 0; i < 100; i++) {
-    acc += (rand() % 100)*0.1f;
+    acc += 0.1f;
   }
 }
 
 void setup() {
-  Serial.begin(SERIAL_BAUDRATE);
+  Serial.begin(9600);
   delay(1000);  // Esperar que el monitor serial conecte
 
-  // Cambiar la frecuencia del CPU (80, 160, 240 MHz)
-  setCpuFrequencyMhz(CPU_MHZ);  // Cambiá este valor para probar
+  // Cambiar la frecuencia del CPU (80, 160, 240) [MHz]
+  setCpuFrequencyMhz(240);  // Cambiá este valor para probar
   delay(100);
 
   Serial.printf("Frecuencia actual del CPU: %d MHz\n", getCpuFrequencyMhz());
@@ -36,7 +33,6 @@ void setup() {
 
   for (int i = 0; i < loop_count; i++) {
     suma_enteros();
-    //suma_floats();
   }
 
   unsigned long end = millis();
