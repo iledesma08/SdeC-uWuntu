@@ -34,7 +34,7 @@ El trabajo se divide en **dos partes principales**, con algunas consignas espec�
 4. **Hacer profiling del tiempo** de funciones y mostrar capturas/conclusiones.
 
 ### 🧠 ¿Cómo hay que hacerlo?
-- Usar una **STM32F103C8T6** (porque es lo que tenemos).
+- Usar una **ESP32** (porque es lo más fácil dentro de lo que tenemos).
 - Escribir un código que mida el tiempo total de ejecución con SysTick o un timer.
 - Medir con dos frecuencias distintas (por ejemplo, 36 MHz y 72 MHz) y comparar el tiempo.
 - Hacer el profiling manual o con ayuda de un osciloscopio/timer externo si se quiere más precisión.
