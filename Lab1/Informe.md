@@ -83,6 +83,60 @@ Es útil para saber cómo se comporta nuestra PC frente a un determinado motor g
 - **Benchmark específico para rpcs3 (Ivan)**: Passmark Single Thread Benchmark  
 A la hora de emular juegos de PS3 es fundamental tener un rendimiento single core, a diferencia de otras tareas que sustentan esto con el uso de múltiples cores y threads.
 
+## Benchmark de Tiempo para Compilación del Kernel de Linux
+
+### 🧮 Comparativa de Rendimiento, Costo y Eficiencia
+
+| Procesador          | Precio (USD) | Tiempo (s) | Rendimiento (1/s) | Rend./USD (×10⁻⁶) | TDP (W) | Rend./Watt (×10⁻⁶) |
+|---------------------|--------------|------------|--------------------|-------------------|---------|---------------------|
+| Intel i5-13600K     | 230          | 83 ± 3     | 0.012              | 52.38             | 125     | 96.39               |
+| AMD Ryzen 9 5900X   | 255          | 97 ± 7     | 0.010              | 40.42             | 105     | 98.18               |
+| AMD Ryzen 9 7950X   | 460          | 53 ± 3     | 0.019              | 41.01             | 170     | 110.98              |
+
+#### 📝 Fuentes
+
+- **Precios y TDP**: [amazon.us](https://www.amazon.com/)
+- **Benchmark**: [OpenBenchmarking.org](https://openbenchmarking.org/test/pts/build-linux-kernel-1.15.0)
+
+### 🧑‍💻 Detalles de Cálculo
+
+- **Rendimiento (1/s)**: Inverso del tiempo promedio de compilación.
+- **Rendimiento por dólar**: Rendimiento / Precio.
+- **Rendimiento por watt**: Rendimiento / TDP.
+
+### ⚡ Aceleración del Ryzen 9 7950X
+
+Comparado con otros procesadores:
+
+- vs. **Ryzen 9 5900X**: `97 / 53 ≈ 1.83×` más rápido.
+- vs. **i5-13600K**: `83 / 53 ≈ 1.566×` más rápido.
+
+### 📌 Conclusiones del análisis de compilación del kernel
+
+A partir de los datos obtenidos en [OpenBenchmarking.org](https://openbenchmarking.org/test/pts/build-linux-kernel-1.15.0) y precios relevados en Amazon (marzo 2025), se evaluó el rendimiento, la eficiencia energética (rendimiento por watt) y la eficiencia económica (rendimiento por dólar) de los tres procesadores en la compilación del kernel de Linux.
+
+#### 💻 Comparativa general
+
+- El **AMD Ryzen 9 7950X** obtuvo el **mejor tiempo de compilación**, con 53 segundos promedio, logrando una aceleración de:
+  - **1.83x** respecto al Ryzen 9 5900X.
+  - **1.566x** respecto al Intel Core i5-13600K.
+
+#### ⚡ Eficiencia energética
+
+- **Ryzen 9 7950X** también fue el **más eficiente en rendimiento por watt**, con **110.98×10⁻⁶**, seguido por el 5900X (**98.18×10⁻⁶**) y luego el 13600K (**96.39×10⁻⁶**).
+- Esto muestra que, a pesar de su mayor TDP (170W), el 7950X compensa con una ejecución significativamente más rápida.
+
+#### 💰 Eficiencia económica
+
+- El **Core i5-13600K** fue el más **eficiente en términos de costo**, con **52.38×10⁻⁶ de rendimiento por dólar**, gracias a su bajo precio (USD 230) y rendimiento competitivo.
+- El **Ryzen 9 5900X** quedó por detrás (40.42×10⁻⁶), y el 7950X, aunque más rápido, fue el menos eficiente por dólar (41.01×10⁻⁶), debido a su elevado precio (USD 460).
+
+#### 🏁 Conclusión final
+
+- Si el **objetivo es velocidad máxima**, el **Ryzen 9 7950X** es el mejor.
+- Si se prioriza **costo-beneficio**, el **i5-13600K** se destaca como la opción más balanceada.
+- Si se busca **eficiencia energética** para tareas largas o ambientes controlados, el **7950X** también resulta favorable.
+
 ---
 
 # Medición de Performance de Código Propio 🖥️📊
@@ -118,8 +172,6 @@ El objetivo es observar cómo el **rendimiento** se ve afectado por la **frecuen
 <image src="Img\tiempoEjecucion.png">
 <image src="Img\speedup.png">
 
----
-
-# Conclusiones
+## 📌 Conclusiones del Análisis de Performance con Código Propio
 
 Vemos que al incrementar la frecuencia del microcontrolador, el rendimiento mejora notablemente y, en base al gráfico de speedup podemos notar que al incrementar en tres la frecuencia (desde 80 [MHz]), así disminuyen los tiempos de ejecución en tres, aproximadamente. La suma de flotantes presenta tiempos más altos en comparación con los enteros, lo cual es esperado debido a la complejidad adicional de las operaciones en punto flotante.
