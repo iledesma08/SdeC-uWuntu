@@ -139,6 +139,49 @@ A partir de los datos obtenidos en [OpenBenchmarking.org](https://openbenchmarki
 
 ---
 
+## 🔍 Análisis del perfil de ejecución con `gprof` (Ignacio Ledesma)
+
+### 🧑‍💻 Seguimiento del Tutorial
+
+<image src="Img\gprof_screenshot.png">
+
+Basado en el archivo `analysis.txt` generado a través de `gprof`, podemos realizar las siguientes observaciones:
+
+### 📊 Flat profile
+
+| Función     | % Tiempo | Tiempo (s) | Llamadas | Tiempo/llamada | Total/llamada |
+|-------------|-----------|------------|----------|----------------|----------------|
+| `new_func1` | 86.91%    | 5.91       | 1        | 5.91           | 5.91           |
+| `func1`     | 6.32%     | 0.43       | 1        | 0.43           | 6.34           |
+| `func2`     | 6.03%     | 0.41       | 1        | 0.41           | 0.41           |
+| `main`      | 0.74%     | 0.05       | 1        | -              | -              |
+
+🔎 **Observaciones:**
+- `new_func1()` consume **la mayor parte del tiempo** total del programa.
+- `func1()` llama a `new_func1()` y, por eso, su *tiempo total por llamada (6.34s)* incluye el tiempo de `new_func1`.
+- `main()` y `func2()` tienen una participación mínima en el tiempo total.
+
+### 🧭 Call Graph (Árbol de llamadas)
+
+- `main()` → llama a `func1()` y `func2()`
+- `func1()` → llama a `new_func1()`
+
+**Distribución de tiempo según el grafo de llamadas:**
+
+| Función      | Tiempo propio (`self`) | Tiempo de hijos (`children`) | Tiempo total |
+|--------------|------------------------|-------------------------------|---------------|
+| `main()`     | 0.05 s                 | 6.75 s                        | 6.80 s        |
+| `func1()`    | 0.43 s                 | 5.91 s                        | 6.34 s        |
+| `new_func1()`| 5.91 s                 | 0.00 s                        | 5.91 s        |
+| `func2()`    | 0.41 s                 | 0.00 s                        | 0.41 s        |
+
+📌 Esto confirma que:
+- **`new_func1()` es el cuello de botella** principal.
+- El tiempo total de `main()` coincide con la suma de `func1() + func2()`.
+- `func1()` actúa como puente, sin ser costosa por sí sola.
+
+---
+
 # Medición de Performance de Código Propio 🖥️📊
 
 Con el objetivo de analizar cómo la **frecuencia del procesador** impacta en el **tiempo de ejecución** de un programa, se desarrolló una prueba controlada utilizando una placa **ESP32** 🛠️, la cual permite modificar dinámicamente la frecuencia del núcleo.
