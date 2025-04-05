@@ -1,20 +1,20 @@
+; ----------------------------
+; int convert(float input)
+; ----------------------------
+
 section .text
-    global sum
+    global convert
 
+convert:
+    push ebp
+    mov ebp, esp
 
-sum:
-    PUSH ebp
-    MOV ebp, esp
-    MOV eax, [ebp + 8]
-    ADD dword [eax], 1; // *arg += 1
-    MOV esp, ebp
-    POP ebp
-    RET
+    fld dword [ebp + 8]      ; ST(0) = input
+    fistp dword [esp - 4]    ; Guardar en stack temporal
+    mov eax, [esp - 4]       ; eax = (int)input
+    add eax, 1
+
+    pop ebp
+    ret
 
 section .note.GNU-stack noalloc noexec nowrite progbits
-
-; [int* i]        
-; [DIR RETORNO]   
-; [EBP(anterior)] 
-
-

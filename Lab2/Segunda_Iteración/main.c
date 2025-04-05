@@ -1,17 +1,9 @@
+// convertion.c
+#include <stdio.h>
+#include <stdlib.h>
 
-/**
- * @param ptr Pointer to an integer
- * @brief This function increments the value pointed to by ptr by 1.
- */
-extern void sum(int* ptr); // Function declaration with cdecl calling convention
-
-void main(void)
-{
-    int i  =  10;
-    sum(&i);
-
-    printf("%d", i); 
-    return;
+void convertion(float* input, int* output, int length) {
+    for (int i = 0; i < length; i++) {
+        output[i] = (int)(input[i] + 1.0f);
+    }
 }
-
-

@@ -28,11 +28,10 @@ def get_data():
         value = []
         for entry in results:
             # Replace None values with 0
+            year.append(entry['date'])
             if entry['value'] is not None:
-                year.append(entry['date'])
                 value.append(entry['value'])
             else:
-                year.append(entry['date'])
                 value.append(0)
 
         year = np.flip(np.array(year, dtype=float))
