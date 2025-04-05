@@ -139,6 +139,26 @@ A partir de los datos obtenidos en [OpenBenchmarking.org](https://openbenchmarki
 
 ---
 
+## 🔍 Análisis de los tiempos de ejecución con `gprof` (Alfonso Mouton)
+El análisis del tiempo de ejecución mediante la herramiento de gprof, fue hecho mediante el siguiente hardware "AMD E2-7110 APU with Radeon R2 Graphics@ 1,8GHz x4 - 1TB HD - 8GB RAM". Al realizar los pasos dados obtenemos un archivo "analysis.txt" generado a través de `gprof`, en el que se puede ver los siguientes datos:
+
+<image src="Img\result.png">
+
+Puestos de una forma legible:
+
+| Función     | % Tiempo | Tiempo (s) | Llamadas | Tiempo/llamada | Total/llamada |
+|-------------|-----------|------------|----------|----------------|----------------|
+| `new_func1` | 3.09%     | 0.72       | 1        | 0.72           | 0.72           |
+| `func1`     | 52.34%    | 12.20      | 1        | 12.20          | 12.92          |
+| `func2`     | 41.27%    | 9.62       | 1        | 9.62           | 9.62           |
+| `main`      | 3.30%     | 22.59      | -        | -              | -              |
+
+**Conclusiones:**
+- "func1()" consume **la mayor parte del tiempo** total del programa (52.34%).
+- "func1()" hace una llamada a "new_func1", es por esto 
+
+---
+  
 ## 🔍 Análisis del perfil de ejecución con `gprof` (Ignacio Ledesma)
 
 ### 🧑‍💻 Seguimiento del Tutorial
@@ -179,6 +199,43 @@ Basado en el archivo `analysis.txt` generado a través de `gprof`, podemos reali
 - **`new_func1()` es el cuello de botella** principal.
 - El tiempo total de `main()` coincide con la suma de `func1() + func2()`.
 - `func1()` actúa como puente, sin ser costosa por sí sola.
+
+---
+
+## 🔍 Análisis del perfil de ejecución con `gprof` (Ivan Zuñiga)
+
+### 📊 Flat profile
+
+| Función     | % Tiempo | Tiempo (s) | Llamadas | Tiempo/llamada | Total/llamada |
+|-------------|-----------|------------|----------|----------------|----------------|
+| `new_func1` | 88.54%    | 1.70       | 1        | 1.70           | 1.70           |
+| `func1`     | 5.73%     | 0.11       | 1        | 0.11           | 1.81           |
+| `func2`     | 5.73%     | 0.11       | 1        | 0.11           | 0.11           |
+
+🔎 **Observaciones:**
+- `new_func1()` consume **la mayor parte del tiempo** total del programa.
+- `func1()` llama a `new_func1()` y, por eso, su *tiempo total por llamada (1.81s)* incluye el tiempo de `new_func1`.
+- `main()` tiene una participación mínima en el tiempo total, es ejecutada por un tiempo menor a 0.00 s, debido a esto no aparece en el análisis temporal. 
+
+### 🧭 Call Graph (Árbol de llamadas)
+
+- `main()` → llama a `func1()` y `func2()`
+- `func1()` → llama a `new_func1()`
+
+**Distribución de tiempo según el grafo de llamadas:**
+
+| Función      | Tiempo propio (`self`) | Tiempo de hijos (`children`) | Tiempo total |
+|--------------|------------------------|-------------------------------|---------------|
+| `main()`     | 0.00 s                 | 1.92 s                        | 1.92 s        |
+| `func1()`    | 0.11 s                 | 1.70 s                        | 1.81 s        |
+| `new_func1()`| 1.70 s                 | 0.00 s                        | 1.70 s        |
+| `func2()`    | 0.11 s                 | 0.00 s                        | 0.11 s        |
+
+📌 Esto confirma que:
+- **`new_func1()` es el cuello de botella** principal.
+- El tiempo total de `main()` coincide con la suma de `func1() + func2()`.
+- `func1()` actúa como puente, sin ser costosa por sí sola.
+- Como se dijo anteriormente, el tiempo propio de `main()` es menor a 0.00 s.
 
 ---
 
