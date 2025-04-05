@@ -1,4 +1,3 @@
-#include <stdio.h>
 
 /**
  * @param ptr Pointer to an integer
