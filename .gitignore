@@ -7,3 +7,5 @@
 bin/
 settings.json
 build/
+*.so
+*.o
