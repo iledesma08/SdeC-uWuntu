@@ -1,22 +1,20 @@
 import requests
 import matplotlib.pyplot as plt
 import numpy as np
+import ctypes
 import os
-from msl.loadlib import LoadLibrary
-from msl.loadlib import Client64
 
-class MainC(Client64):
-    def __init__(self):
-        lib_path = os.path.join(os.path.dirname(__file__), 'main_c.so')
-        super().__init__(lib_path)
-
-    def convertion(self, input_array):
-        length = len(input_array)
-        int_array = self.request32('convertion', input_array.astype(np.float32), length)
-        return np.array(int_array, dtype=np.int32)
+# https://documents.worldbank.org/en/publication/documents-reports/api
 
 ##
-# Fetches the GINI index
+# @brief Fetches the GINI index data from the World Bank API using GET.
+#
+# This function retrieves the GINI index for Argentina between 2000 and 2025.
+# Null values are replaced by zero.
+#
+# @return Tuple of two NumPy arrays:
+#         - years: float array of years
+#         - values: float array of GINI index values
 def get_data():
     response = requests.get(
         "https://api.worldbank.org/v2/en/country/ARG/indicator/SI.POV.GINI?format=json&date=2000:2025"
@@ -24,28 +22,59 @@ def get_data():
 
     if response.ok:
         data = response.json()
-        results = data[1]
+        results = data[1]  # Second element contains the data
+
         year = []
         value = []
-
         for entry in results:
             year.append(entry['date'])
-            value.append(entry['value'] if entry['value'] is not None else 0)
+            # Replace None values with 0
+            if entry['value'] is not None:
+                value.append(entry['value'])
+            else:
+                value.append(0)
 
-        return np.flip(np.array(year, dtype=float)), np.flip(np.array(value, dtype=float))
+        year = np.flip(np.array(year, dtype=float))
+        value = np.flip(np.array(value, dtype=float))
+
+        return year, value
     else:
         print("Failed to fetch data:", response.status_code)
         return None, None
 
-# Usar la clase para convertir valores
-main_c = MainC()
+##
+# @brief Wrapper function to call the C library's conversion function.
+#
+# @param input Float pointer to the input array.
+# @param output Integer pointer to the output array.
+# @param length Length of the array.
+def convertion(input, output, length):
+    main_c.convertion(input, output, length)
 
-# Fetch and convert
+# Load the shared C library
+lib_path = os.path.join(os.path.dirname(__file__), 'main.so')
+main_c = ctypes.CDLL(lib_path)
+
+# Define argument and return types for the C function
+main_c.convertion.argtypes = (
+    ctypes.POINTER(ctypes.c_float),  # float* input
+    ctypes.POINTER(ctypes.c_int),    # int* output
+    ctypes.c_int                     # int length
+)
+main_c.convertion.restype = ctypes.c_void_p
+
+# Fetch and process the data
 year, value = get_data()
-value_c = main_c.convertion(value)
+
+length = len(value)
+input_array = (ctypes.c_float * length)(*value)
+output_array = (ctypes.c_int * length)()
+
+convertion(input_array, output_array, length)
+value_c = np.ctypeslib.as_array(output_array)
 
 # Plotting
-plt.plot(year, value_c, marker='o', label='Gini Index (converted)')
+plt.plot(year, value_c, marker='o', label='Gini Index')
 plt.title('Gini Index in Argentina (2000–2025)')
 plt.xlabel('Year')
 plt.grid(True)
