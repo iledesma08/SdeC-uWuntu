@@ -5,3 +5,7 @@
 .vscode/ipch
 
 bin/
+settings.json
+build/
+*.so
+*.o
