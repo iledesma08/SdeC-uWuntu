@@ -27,8 +27,8 @@ def get_data():
         year = []
         value = []
         for entry in results:
-            year.append(entry['date'])
             # Replace None values with 0
+            year.append(entry['date'])
             if entry['value'] is not None:
                 value.append(entry['value'])
             else:
