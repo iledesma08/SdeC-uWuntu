@@ -7,7 +7,7 @@
 bin/
 settings.json
 build/
-Lab2/Primera_Iteración/src/main.so
-Lab2/Segunda_Iteración/src/convert.o
-Lab2/Segunda_Iteración/venv
-Lab2/Segunda_Iteración/src/main.so
+
+venv/
+*.so
+*.o
