@@ -239,4 +239,4 @@ def gini_plot(country_code):
     return render_html_plot(plot_html, country_code)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

@@ -14,29 +14,30 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 source "$VENV_DIR/bin/activate"
-echo "Virtual environment activated."
+echo "✅ Virtual environment activated."
 
 echo "[2/5] Installing Python dependencies..."
 pip install --upgrade pip
 pip install flask requests matplotlib numpy plotly
-echo "Dependencies installed."
+echo "✅ Dependencies installed."
 
-echo "[3/5] Compiling assembler..."
-nasm -f elf64 "$SRC_DIR/convert.asm" -o "$SRC_DIR/convert.o"
+echo "[3/5] Compiling 32-bit assembler..."
+nasm -f elf32 "$SRC_DIR/convert.asm" -o "$SRC_DIR/convert.o"
 
-echo "[4/5] Compiling and linking C + ASM into $LIB_NAME..."
-gcc -fPIC -shared "$SRC_DIR/main.c" "$SRC_DIR/convert.o" -o "$SRC_DIR/$LIB_NAME"
+echo "[4/5] Compiling and linking C + ASM into $LIB_NAME (32-bit)..."
+gcc -m32 -fPIC -shared "$SRC_DIR/main.c" "$SRC_DIR/convert.o" -o "$SRC_DIR/$LIB_NAME"
 
-echo "[5/5] Build complete. Shared library created at: $SRC_DIR/$LIB_NAME"
+echo "[5/5] ✅ Build complete. Shared library created at: $SRC_DIR/$LIB_NAME"
 ls -lh "$SRC_DIR/$LIB_NAME"
 
 echo ""
-echo "Todo listo. Para iniciar tu aplicación Flask:"
+echo "🚀 To start your Flask app, run:"
 echo ""
 echo "./scripts/run.sh"
 echo ""
-echo "Asegurate de que tenga permisos de ejecución:"
-echo "chmod +x scripts/run_flask.sh"
+echo "Ensure it has execution permissions:"
+echo "chmod +x scripts/run.sh"
 echo ""
-echo "Una vez iniciada, accedé en tu navegador a:"
+echo "Then access:"
 echo "http://localhost:5000"
+
