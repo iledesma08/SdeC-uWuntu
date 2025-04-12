@@ -100,6 +100,45 @@ sequenceDiagram
 En esta segunda iteración, se agregará una capa aún más inferior delegando la tarea de cálculo a 'NASM' aplicando además la convención de llamadas.
 Además se migrará la interfaz de usuario (UI) a una página web local corrida mediante Flask en Python, donde mediante una petición GET es posible obtener el gráfico (Con los datos ya calculados y pasando por las capas inferiores) para cada país mediante un código deniminado 'Country_Code' Código ISO 3166-1 alpha-3.
 
+Aquí podemos visualizar la forma en la cual se consultan los datos de la API y se los prepara para enviarlos a C.
+
+```python
+def get_data(country_code:str) -> tuple:
+    """
+    Consulta datos del índice GINI para un país específico.
+
+    Args:
+        country_code (str): Código ISO del país (ej: 'ARG', 'BR', etc.)
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: años y valores GINI
+    """
+    url = f"https://api.worldbank.org/v2/en/country/{country_code}/indicator/SI.POV.GINI"
+    params = {"format": "json", "date": "2000:2025"}
+
+    response = requests.get(url, params=params)
+    
+    if response.ok:
+        try:
+            data = response.json()
+            results = data[1]
+
+            year = []
+            value = []
+            for entry in results:
+                year.append(entry['date'])
+                value.append(entry['value'] if entry['value'] is not None else 0)
+
+            year = np.flip(np.array(year, dtype=float))
+            value = np.flip(np.array(value, dtype=float))
+            return year, value
+        except Exception as e:
+            print("Error parsing data:", e)
+            return None, None
+    else:
+        return None, None
+```
+
 #### Diagrama de Secuencia Completo de la App GINI
 
 ```mermaid
