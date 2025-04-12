@@ -71,7 +71,7 @@ main_c.convertion.restype = ctypes.c_void_p
 #### Diagrama de Secuencia del Script GINI (requests + C + matplotlib)
 
 ```mermaid
-%%{ init: { "theme": "neutral" } }%%
+%%{ init: { "theme": "default", "themeVariables": { "background": "#ffffff", "fontColor": "#000000" } } }%%
 sequenceDiagram
     autonumber
     participant Usuario
@@ -103,7 +103,7 @@ Además se migrará la interfaz de usuario (UI) a una página web local corrida 
 #### Diagrama de Secuencia Completo de la App GINI
 
 ```mermaid
-%%{ init: { "theme": "neutral" } }%%
+%%{ init: { "theme": "default", "themeVariables": { "background": "#ffffff", "fontColor": "#000000" } } }%%
 sequenceDiagram
     autonumber
     participant Usuario
@@ -142,6 +142,20 @@ sequenceDiagram
     FlaskApp-->>Navegador: HTML completo con gráfico embebido
     Navegador-->>Usuario: Muestra gráfico GINI interactivo
 ``` 
+
+Mediante esto, podemos correr en un servidor local una página que nos permite acceder de forma dinámica a los gráficos del índice, pasando por toda la arquitectura de capas para aplicar el procesamiento de los datos.
+
+<p align="center">
+  <img src='./Img/main.png' alt='Página inicial' width='300'/>
+</p>
+
+<p align="center">
+  <img src='./Img/gini.png' alt='Diagramado del índice' width='300'/>
+</p>
+
+
+#### Análisis con GDB
+Aquí podemos visualizar el estado del área de memoria que contiene el stack antes y después de la llamada a la función de assembler.
 
 ...
 
