@@ -146,11 +146,11 @@ sequenceDiagram
 Mediante esto, podemos correr en un servidor local una página que nos permite acceder de forma dinámica a los gráficos del índice, pasando por toda la arquitectura de capas para aplicar el procesamiento de los datos.
 
 <p align="center">
-  <img src='./Img/main.png' alt='Página inicial' width='300'/>
+  <img src='./Img/main.png' alt='Página inicial' width='700'/>
 </p>
 
 <p align="center">
-  <img src='./Img/gini.png' alt='Diagramado del índice' width='300'/>
+  <img src='./Img/gini.png' alt='Diagramado del índice' width='850'/>
 </p>
 
 
