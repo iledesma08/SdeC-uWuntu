@@ -68,6 +68,31 @@ main_c.convertion.restype = ctypes.c_void_p
 
 ```
 
+#### Diagrama de Secuencia del Script GINI (requests + C + matplotlib)
+
+```mermaid
+%%{ init: { "theme": "default", "themeVariables": { "background": "#ffffff", "fontColor": "#000000" } } }%%
+sequenceDiagram
+    autonumber
+    participant Usuario
+    participant ScriptPython
+    participant WorldBankAPI
+    participant BibliotecaC
+    participant Matplotlib
+
+    Usuario->>ScriptPython: Ejecuta script
+    ScriptPython->>WorldBankAPI: GET datos GINI (ARG, 2000–2025)
+    WorldBankAPI-->>ScriptPython: JSON con años y valores
+
+    ScriptPython->>ScriptPython: Reemplaza nulos con 0
+    ScriptPython->>BibliotecaC: convertion(input_array, output_array, length)
+    BibliotecaC-->>ScriptPython: output_array (enteros)
+    ScriptPython->>ScriptPython: value_c = as_array(output_array)
+
+    ScriptPython->>Matplotlib: plt.plot(year, value_c)
+    Matplotlib-->>Usuario: Muestra gráfico (GINI vs Año)
+```
+
 ...
 
 ### 🧮 Segunda Iteración
@@ -75,6 +100,101 @@ main_c.convertion.restype = ctypes.c_void_p
 En esta segunda iteración, se agregará una capa aún más inferior delegando la tarea de cálculo a 'NASM' aplicando además la convención de llamadas.
 Además se migrará la interfaz de usuario (UI) a una página web local corrida mediante Flask en Python, donde mediante una petición GET es posible obtener el gráfico (Con los datos ya calculados y pasando por las capas inferiores) para cada país mediante un código deniminado 'Country_Code' Código ISO 3166-1 alpha-3.
 
+Aquí podemos visualizar la forma en la cual se consultan los datos de la API y se los prepara para enviarlos a C.
+
+```python
+def get_data(country_code:str) -> tuple:
+    """
+    Consulta datos del índice GINI para un país específico.
+
+    Args:
+        country_code (str): Código ISO del país (ej: 'ARG', 'BR', etc.)
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: años y valores GINI
+    """
+    url = f"https://api.worldbank.org/v2/en/country/{country_code}/indicator/SI.POV.GINI"
+    params = {"format": "json", "date": "2000:2025"}
+
+    response = requests.get(url, params=params)
+    
+    if response.ok:
+        try:
+            data = response.json()
+            results = data[1]
+
+            year = []
+            value = []
+            for entry in results:
+                year.append(entry['date'])
+                value.append(entry['value'] if entry['value'] is not None else 0)
+
+            year = np.flip(np.array(year, dtype=float))
+            value = np.flip(np.array(value, dtype=float))
+            return year, value
+        except Exception as e:
+            print("Error parsing data:", e)
+            return None, None
+    else:
+        return None, None
+```
+
+#### Diagrama de Secuencia Completo de la App GINI
+
+```mermaid
+%%{ init: { "theme": "default", "themeVariables": { "background": "#ffffff", "fontColor": "#000000" } } }%%
+sequenceDiagram
+    autonumber
+    participant Usuario
+    participant Navegador
+    participant FlaskApp
+    participant WorldBankAPI
+    participant BibliotecaC
+    participant Plotly
+
+    %% Inicio: Página principal
+    Usuario->>Navegador: Solicita /
+    Navegador->>FlaskApp: GET /
+    FlaskApp-->>Navegador: HTML con botones de países
+    Navegador-->>Usuario: Muestra página de inicio
+
+    %% Ruta JSON: /gini/<country_code>
+    Usuario->>Navegador: Solicita /gini/ARG
+    Navegador->>FlaskApp: GET /gini/ARG
+    FlaskApp->>WorldBankAPI: Consulta datos GINI (requests)
+    WorldBankAPI-->>FlaskApp: JSON con años y valores
+    FlaskApp->>BibliotecaC: convert_with_c(valores)
+    BibliotecaC-->>FlaskApp: arreglo de enteros
+    FlaskApp-->>Navegador: JSON con país, años y valores
+    Navegador-->>Usuario: Muestra datos GINI en formato JSON
+
+    %% Ruta con gráfico: /gini/<country_code>/plot
+    Usuario->>Navegador: Solicita /gini/ARG/plot
+    Navegador->>FlaskApp: GET /gini/ARG/plot
+    FlaskApp->>WorldBankAPI: Consulta datos GINI
+    WorldBankAPI-->>FlaskApp: JSON con años y valores
+    FlaskApp->>BibliotecaC: convert_with_c(valores)
+    BibliotecaC-->>FlaskApp: valores enteros (output_array)
+    FlaskApp->>Plotly: Genera gráfico HTML (create_plot)
+    Plotly-->>FlaskApp: HTML (div) con gráfico interactivo
+    FlaskApp->>FlaskApp: render_html_plot(plot_html, código país)
+    FlaskApp-->>Navegador: HTML completo con gráfico embebido
+    Navegador-->>Usuario: Muestra gráfico GINI interactivo
+``` 
+
+Mediante esto, podemos correr en un servidor local una página que nos permite acceder de forma dinámica a los gráficos del índice, pasando por toda la arquitectura de capas para aplicar el procesamiento de los datos.
+
+<p align="center">
+  <img src='./Img/main.png' alt='Página inicial' width='700'/>
+</p>
+
+<p align="center">
+  <img src='./Img/gini.png' alt='Diagramado del índice' width='850'/>
+</p>
+
+
+#### Análisis con GDB
+Aquí podemos visualizar el estado del área de memoria que contiene el stack antes y después de la llamada a la función de assembler.
 
 ...
 

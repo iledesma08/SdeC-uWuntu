@@ -161,8 +161,6 @@ def create_plot(years:np.ndarray, values_converted:np.ndarray, is_null:np.ndarra
     return pyo.plot(fig, output_type='div', include_plotlyjs='cdn')
 
 
-from flask import render_template_string
-
 def render_html_plot(plot_html: str, country_code: str) -> str:
     """
     Retorna el HTML con el gráfico embebido.
