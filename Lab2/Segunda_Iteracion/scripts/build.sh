@@ -7,16 +7,22 @@ SRC_DIR="$ROOT_DIR/src"
 VENV_DIR="$ROOT_DIR/venv"
 LIB_NAME="main.so"
 
-echo "[1/5] Creating Python virtual environment..."
+echo "[1/5] Creando entorno virtual de Python..."
 
 if [ ! -d "$VENV_DIR" ]; then
-  python3 -m venv "$VENV_DIR"
+  if ! python3 -m venv "$VENV_DIR"; then
+    echo "Error: No se pudo crear el entorno virtual. Asegurate de tener instalado python3-venv."
+    echo "Para instalarlo: sudo apt install python3-venv"
+    exit 1
+  fi
+else
+  echo "Entorno virtual ya existe."
 fi
 
 source "$VENV_DIR/bin/activate"
 echo "✅ Virtual environment activated."
 
-echo "[2/5] Installing Python dependencies..."
+echo "[2/5] Instalando dependencias de Python..."
 pip install --upgrade pip
 pip install flask requests matplotlib numpy plotly
 echo "✅ Dependencies installed."

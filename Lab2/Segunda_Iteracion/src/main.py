@@ -18,7 +18,7 @@ main_c.convertion.argtypes = (
 )
 main_c.convertion.restype = ctypes.c_void_p
 
-def get_data(country_code):
+def get_data(country_code:str) -> tuple:
     """
     Consulta datos del índice GINI para un país específico.
 
@@ -32,7 +32,7 @@ def get_data(country_code):
     params = {"format": "json", "date": "2000:2025"}
 
     response = requests.get(url, params=params)
-
+    
     if response.ok:
         try:
             data = response.json()
@@ -53,7 +53,7 @@ def get_data(country_code):
     else:
         return None, None
 
-def convertion(input, output, length):
+def convertion(input:ctypes.Array, output:ctypes.Array, length:int) -> None:
     """
     Llama a la función `convertion` definida en la biblioteca C/ASM.
 
@@ -71,7 +71,7 @@ def convertion(input, output, length):
     """
     main_c.convertion(input, output, length)
 
-def convert_with_c(values):
+def convert_with_c(values:np.ndarray) -> np.ndarray:
     """
     Convierte un array de floats a enteros usando la biblioteca en C.
     
@@ -88,7 +88,7 @@ def convert_with_c(values):
     return np.ctypeslib.as_array(output_array)
 
 
-def create_plot(years, values_converted, is_null, country_code):
+def create_plot(years:np.ndarray, values_converted:np.ndarray, is_null:np.ndarray, country_code:str) -> str:
     """
     Genera el gráfico interactivo con Plotly para los valores GINI.
 
@@ -124,7 +124,7 @@ def create_plot(years, values_converted, is_null, country_code):
 
     layout = go.Layout(
         title=dict(
-            text=f'Índice GINI en {country_code.upper()} (2000–2025)',
+            text=f'Índice GINI en {country_code.upper()}',
             x=0.5,
             xanchor='center',
             font=dict(size=24, color='black')
@@ -161,7 +161,9 @@ def create_plot(years, values_converted, is_null, country_code):
     return pyo.plot(fig, output_type='div', include_plotlyjs='cdn')
 
 
-def render_html_plot(plot_html, country_code):
+from flask import render_template_string
+
+def render_html_plot(plot_html: str, country_code: str) -> str:
     """
     Retorna el HTML con el gráfico embebido.
 
@@ -173,17 +175,39 @@ def render_html_plot(plot_html, country_code):
         str: Página HTML lista para renderizar
     """
     return render_template_string(f"""
+    <!DOCTYPE html>
     <html>
-    <head><title>GINI Plot {country_code.upper()}</title></head>
+    <head>
+        <title>GINI Plot {country_code.upper()}</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; text-align: center; }}
+            .button {{
+                margin-top: 20px;
+                padding: 10px 20px;
+                background-color: #2ecc71;
+                color: white;
+                text-decoration: none;
+                border-radius: 6px;
+                font-size: 16px;
+                display: inline-block;
+                transition: background-color 0.3s ease;
+            }}
+            .button:hover {{
+                background-color: #27ae60;
+            }}
+        </style>
+    </head>
     <body>
-        <h2 style="text-align:center;">Índice GINI para {country_code.upper()}</h2>
         {plot_html}
+        <br>
+        <a href="/" class="button">🔙 Volver a Inicio</a>
     </body>
     </html>
     """)
 
+
 @app.route('/gini/<country_code>')
-def gini_json(country_code):
+def gini_json(country_code:str):
     """
     Devuelve en formato JSON el índice GINI para un país específico.
 
@@ -202,6 +226,7 @@ def gini_json(country_code):
         o bien un error HTTP 404 si no se encuentran datos.
     """
     year, value = get_data(country_code)
+    
     if year is None:
         return jsonify({'error': f"No se encontraron datos para '{country_code.upper()}'"}), 404
 
@@ -214,7 +239,7 @@ def gini_json(country_code):
     })
 
 @app.route('/gini/<country_code>/plot')
-def gini_plot(country_code):
+def gini_plot(country_code:str) -> str:
     """
     Genera una visualización interactiva del índice GINI para un país dado.
 
@@ -237,6 +262,46 @@ def gini_plot(country_code):
     is_null = value_c == 1
     plot_html = create_plot(year, value_c, is_null, country_code)
     return render_html_plot(plot_html, country_code)
+
+@app.route('/')
+def index() -> str:
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Calculadora GINI 🌎</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            h1 { color: #2c3e50; }
+            .button {
+                display: inline-block;
+                margin: 10px;
+                padding: 12px 24px;
+                background-color: #3498db;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                text-decoration: none;
+                transition: background-color 0.3s ease;
+            }
+            .button:hover {
+                background-color: #2980b9;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Calculadora de Índice GINI 🌍</h1>
+        <p>Elegí un país para ver su gráfico:</p>
+        <a href="/gini/ARG/plot" class="button">🇦🇷 Argentina</a>
+        <a href="/gini/USA/plot" class="button">🇺🇸 Estados Unidos</a>
+        <a href="/gini/BRA/plot" class="button">🇧🇷 Brasil</a>
+        <a href="/gini/DEU/plot" class="button">🇩🇪 Alemania</a>
+    </body>
+    </html>
+    """
+    return render_template_string(html)
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
