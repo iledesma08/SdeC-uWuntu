@@ -7,5 +7,7 @@
 bin/
 settings.json
 build/
+
+venv/
 *.so
 *.o
