@@ -11,39 +11,27 @@ echo "[1/5] Creando entorno virtual de Python..."
 
 if [ ! -d "$VENV_DIR" ]; then
   if ! python3 -m venv "$VENV_DIR"; then
-    echo "Error: No se pudo crear el entorno virtual. Asegurate de tener instalado python3-venv."
+    echo "Error: No se pudo crear el entorno virtual. Asegúrate de tener instalado python3-venv."
     echo "Para instalarlo: sudo apt install python3-venv"
     exit 1
   fi
 else
-  echo "Entorno virtual ya existe."
+  echo "El entorno virtual ya existe."
 fi
 
 source "$VENV_DIR/bin/activate"
-echo "✅ Virtual environment activated."
+echo "Entorno virtual activado."
 
 echo "[2/5] Instalando dependencias de Python..."
 pip install --upgrade pip
 pip install flask requests matplotlib numpy plotly
-echo "✅ Dependencies installed."
+echo "Dependencias instaladas."
 
-echo "[3/5] Compiling 32-bit assembler..."
+echo "[3/5] Compilando ensamblador de 32 bits..."
 nasm -f elf32 "$SRC_DIR/convert.asm" -o "$SRC_DIR/convert.o"
 
-echo "[4/5] Compiling and linking C + ASM into $LIB_NAME (32-bit)..."
+echo "[4/5] Compilando y enlazando C + ASM en $LIB_NAME (32 bits)..."
 gcc -m32 -fPIC -shared "$SRC_DIR/main.c" "$SRC_DIR/convert.o" -o "$SRC_DIR/$LIB_NAME"
 
-echo "[5/5] ✅ Build complete. Shared library created at: $SRC_DIR/$LIB_NAME"
+echo "[5/5] Compilación completa. Librería compartida creada en: $SRC_DIR/$LIB_NAME"
 ls -lh "$SRC_DIR/$LIB_NAME"
-
-echo ""
-echo "🚀 To start your Flask app, run:"
-echo ""
-echo "./scripts/run.sh"
-echo ""
-echo "Ensure it has execution permissions:"
-echo "chmod +x scripts/run.sh"
-echo ""
-echo "Then access:"
-echo "http://localhost:5000"
-

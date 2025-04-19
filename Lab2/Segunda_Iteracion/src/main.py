@@ -7,7 +7,6 @@ import plotly.graph_objs as go
 import plotly.offline as pyo
 
 app = Flask(__name__)
-
 lib_path = os.path.join(os.path.dirname(__file__), 'main.so')
 main_c = ctypes.CDLL(lib_path)
 
@@ -87,7 +86,6 @@ def convert_with_c(values:np.ndarray) -> np.ndarray:
     convertion(input_array, output_array, length)
     return np.ctypeslib.as_array(output_array)
 
-
 def create_plot(years:np.ndarray, values_converted:np.ndarray, is_null:np.ndarray, country_code:str) -> str:
     """
     Genera el gráfico interactivo con Plotly para los valores GINI.
@@ -160,7 +158,6 @@ def create_plot(years:np.ndarray, values_converted:np.ndarray, is_null:np.ndarra
     fig = go.Figure(data=[trace_main, trace_nulls], layout=layout)
     return pyo.plot(fig, output_type='div', include_plotlyjs='cdn')
 
-
 def render_html_plot(plot_html: str, country_code: str) -> str:
     """
     Retorna el HTML con el gráfico embebido.
@@ -202,7 +199,6 @@ def render_html_plot(plot_html: str, country_code: str) -> str:
     </body>
     </html>
     """)
-
 
 @app.route('/gini/<country_code>')
 def gini_json(country_code:str):
@@ -299,7 +295,6 @@ def index() -> str:
     </html>
     """
     return render_template_string(html)
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
