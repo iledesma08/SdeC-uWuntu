@@ -68,6 +68,31 @@ main_c.convertion.restype = ctypes.c_void_p
 
 ```
 
+#### Diagrama de Secuencia del Script GINI (requests + C + matplotlib)
+
+```mermaid
+%%{ init: { "theme": "default", "themeVariables": { "background": "#ffffff", "fontColor": "#000000" } } }%%
+sequenceDiagram
+    autonumber
+    participant Usuario
+    participant ScriptPython
+    participant WorldBankAPI
+    participant BibliotecaC
+    participant Matplotlib
+
+    Usuario->>ScriptPython: Ejecuta script
+    ScriptPython->>WorldBankAPI: GET datos GINI (ARG, 2000–2025)
+    WorldBankAPI-->>ScriptPython: JSON con años y valores
+
+    ScriptPython->>ScriptPython: Reemplaza nulos con 0
+    ScriptPython->>BibliotecaC: convertion(input_array, output_array, length)
+    BibliotecaC-->>ScriptPython: output_array (enteros)
+    ScriptPython->>ScriptPython: value_c = as_array(output_array)
+
+    ScriptPython->>Matplotlib: plt.plot(year, value_c)
+    Matplotlib-->>Usuario: Muestra gráfico (GINI vs Año)
+```
+
 ...
 
 ### 🧮 Segunda Iteración
@@ -75,8 +100,231 @@ main_c.convertion.restype = ctypes.c_void_p
 En esta segunda iteración, se agregará una capa aún más inferior delegando la tarea de cálculo a 'NASM' aplicando además la convención de llamadas.
 Además se migrará la interfaz de usuario (UI) a una página web local corrida mediante Flask en Python, donde mediante una petición GET es posible obtener el gráfico (Con los datos ya calculados y pasando por las capas inferiores) para cada país mediante un código deniminado 'Country_Code' Código ISO 3166-1 alpha-3.
 
+Aquí podemos visualizar la forma en la cual se consultan los datos de la API y se los prepara para enviarlos a C.
+
+```python
+def get_data(country_code:str) -> tuple:
+    """
+    Consulta datos del índice GINI para un país específico.
+
+    Args:
+        country_code (str): Código ISO del país (ej: 'ARG', 'BR', etc.)
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: años y valores GINI
+    """
+    url = f"https://api.worldbank.org/v2/en/country/{country_code}/indicator/SI.POV.GINI"
+    params = {"format": "json", "date": "2000:2025"}
+
+    response = requests.get(url, params=params)
+    
+    if response.ok:
+        try:
+            data = response.json()
+            results = data[1]
+
+            year = []
+            value = []
+            for entry in results:
+                year.append(entry['date'])
+                value.append(entry['value'] if entry['value'] is not None else 0)
+
+            year = np.flip(np.array(year, dtype=float))
+            value = np.flip(np.array(value, dtype=float))
+            return year, value
+        except Exception as e:
+            print("Error parsing data:", e)
+            return None, None
+    else:
+        return None, None
+```
+
+#### Diagrama de Secuencia Completo de la App GINI
+
+```mermaid
+%%{ init: { "theme": "default", "themeVariables": { "background": "#ffffff", "fontColor": "#000000" } } }%%
+sequenceDiagram
+    autonumber
+    participant Usuario
+    participant Navegador
+    participant FlaskApp
+    participant WorldBankAPI
+    participant BibliotecaC
+    participant Plotly
+
+    %% Inicio: Página principal
+    Usuario->>Navegador: Solicita /
+    Navegador->>FlaskApp: GET /
+    FlaskApp-->>Navegador: HTML con botones de países
+    Navegador-->>Usuario: Muestra página de inicio
+
+    %% Ruta JSON: /gini/<country_code>
+    Usuario->>Navegador: Solicita /gini/ARG
+    Navegador->>FlaskApp: GET /gini/ARG
+    FlaskApp->>WorldBankAPI: Consulta datos GINI (requests)
+    WorldBankAPI-->>FlaskApp: JSON con años y valores
+    FlaskApp->>BibliotecaC: convert_with_c(valores)
+    BibliotecaC-->>FlaskApp: arreglo de enteros
+    FlaskApp-->>Navegador: JSON con país, años y valores
+    Navegador-->>Usuario: Muestra datos GINI en formato JSON
+
+    %% Ruta con gráfico: /gini/<country_code>/plot
+    Usuario->>Navegador: Solicita /gini/ARG/plot
+    Navegador->>FlaskApp: GET /gini/ARG/plot
+    FlaskApp->>WorldBankAPI: Consulta datos GINI
+    WorldBankAPI-->>FlaskApp: JSON con años y valores
+    FlaskApp->>BibliotecaC: convert_with_c(valores)
+    BibliotecaC-->>FlaskApp: valores enteros (output_array)
+    FlaskApp->>Plotly: Genera gráfico HTML (create_plot)
+    Plotly-->>FlaskApp: HTML (div) con gráfico interactivo
+    FlaskApp->>FlaskApp: render_html_plot(plot_html, código país)
+    FlaskApp-->>Navegador: HTML completo con gráfico embebido
+    Navegador-->>Usuario: Muestra gráfico GINI interactivo
+``` 
+
+Mediante esto, podemos correr en un servidor local una página que nos permite acceder de forma dinámica a los gráficos del índice, pasando por toda la arquitectura de capas para aplicar el procesamiento de los datos.
+
+<p align="center">
+  <img src='./Img/main.png' alt='Página inicial' width='700'/>
+</p>
+
+<p align="center">
+  <img src='./Img/gini.png' alt='Diagramado del índice' width='850'/>
+</p>
+
+
+#### Análisis con GDB
+Aquí podemos visualizar el estado del área de memoria que contiene el stack antes y después de la llamada a la función de assembler.
 
 ...
+
+# Análisis del movimiento del stack antes, después y durante la llamada a `convert`
+
+## 1. Antes de llamar a `convert`
+
+**Breakpoint en `convertion`**
+
+![](./Img/breakpoint_preconvert.png)
+
+- Estamos dentro de `main()`, en la función `convertion()`.
+- Todavía no se llamó a la función `convert`.
+- El stack contiene:
+  - La dirección de retorno hacia `main`.
+  - Variables locales de `main`.
+  - Parámetros pasados a `convertion`: `input`, `output`, `length`.
+
+**Stack en este punto:**
+
+![](./Img/Pre_Convertion_Stack.png)
+
+
+## 2. Durante la ejecución dentro de `convert`, previo a ejecutar `push ebp`
+
+Una vez que la función `convert` comienza su ejecución, el stack se organiza siguiendo la convención `cdecl`, respetando el nuevo marco (`stack frame`).
+
+**Stack luego de hacer el llamado a la función `convert`:**
+
+![](./Img/Post_Convert_Call.png)
+
+### Análisis:
+
+En este momento:
+
+- La función `convert(float value)` recién acaba de ser llamada.
+- El `CALL` a `convert` ya sucedió, por lo tanto en el stack ya está:
+  - La dirección de retorno a `convertion` (para cuando `convert` termine).
+  - El parámetro pasado a `convert` (el `float value`).
+
+### Relación con la convención de llamadas (`cdecl`):
+
+- **Parámetros**: Se pasan en la pila, de derecha a izquierda (en este caso, un único `float`).
+- **Dirección de retorno**: Se guarda automáticamente por la instrucción `CALL`.
+- Todavía no se ha creado el nuevo marco de pila (`frame`) de `convert`. Eso sucede justo en el siguiente paso (`push ebp` y `mov ebp, esp`).
+
+### Stack antes del `push ebp`
+
+| Dirección | Contenido                  | Descripción                        |
+|:----------|:----------------------------|:-----------------------------------|
+| [esp]     | Dirección de retorno         | A `convertion` (después del `call`) |
+| [esp+4]   | Argumento `float` (`38.5f`)   | El valor pasado a `convert`         |
+
+## 3. Luego de ejecutar `push ebp`
+
+**Stack luego de hacer `push ebp` dentro de `convert`**
+
+![](./Img/Post_PUSH_Stack.png)
+
+### Análisis:
+
+En este momento:
+
+- Se acaba de ejecutar `push ebp`, como primer instrucción de la función `convert`.
+- Esto es parte de la creación del nuevo frame de pila estándar en C (`cdecl`).
+
+### Relación con la convención de llamadas (`cdecl`):
+
+- **push ebp**: Guarda el valor anterior de `ebp` para poder restaurarlo al salir de la función.
+
+### ¿Qué queda en el stack?
+
+| Dirección | Contenido                  | Descripción                       |
+|:----------|:----------------------------|:----------------------------------|
+| [esp]     | Valor anterior de `ebp`      | Marco de pila anterior guardado.  |
+| [esp+4]   | Dirección de retorno         | A `convertion`                    |
+| [esp+8]   | Argumento `float` (`38.5f`)   | El valor a convertir en `convert` |
+
+
+## 4. Ejecución de instrucciones que no afectan al stack
+
+- `mov ebp, esp` crea el nuevo stack frame.
+- El argumento se accede mediante la posición relativa `[ebp+8]`.
+- Variables locales temporales se manejan en espacio reservado `[ebp-4]`.
+- `eax` se utiliza como registro de retorno, como dicta la convención estándar de llamadas en x86 (`cdecl`).
+- `mov esp, ebp` destruye el marco de pila.
+
+## 5. Ejecución de `pop ebp` 
+
+Después de terminar el cuerpo de la función `convert`, se ejecuta `pop ebp`.
+
+### ¿Qué hace `pop ebp`?
+
+- Toma el valor en lo más alto del stack (`esp`) y lo carga en `ebp`.
+- Este valor es el antiguo `ebp` de la función `convertion`.
+- Se restablece el stack frame original antes de entrar en `convert`.
+
+**Stack después de `pop ebp`:**
+
+| Dirección | Contenido                | Descripción                        |
+|:----------|:--------------------------|:-----------------------------------|
+| [esp]     | Dirección de retorno       | Dirección donde continuar (`convertion`).
+| [esp+4]   | Argumento `float` (38.5f)   | El valor original pasado a `convert`.
+
+**Estado del stack:**
+
+![](./Img/Post_POP_Stack.png)
+
+
+## 6. Ejecución de `ret` (retornar a `convertion`)
+
+Luego de restaurar `ebp`, se ejecuta la instrucción `ret`.
+
+### ¿Qué hace `ret`?
+
+- Extrae el valor que hay en `[esp]` (la dirección de retorno).
+- Salta a esa dirección (vuelve a `convertion`, justo después del `call convert`).
+- Incrementa automáticamente `esp` para limpiar el stack.
+
+### **Después de `ret`:**
+- El stack queda igual que estaba antes de hacer `call convert`.
+- Se elimina la dirección de retorno del stack.
+- Se sigue ejecutando `convertion` normalmente.
+
+**Estado del stack:**
+
+![](./Img/Pre_Convertion_Stack.png)
+
+
+---
 
 ## ✅ Conclusión
 

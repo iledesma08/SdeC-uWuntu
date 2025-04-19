@@ -19,30 +19,31 @@ else
   echo "Entorno virtual ya existe."
 fi
 
-source "$VENV_DIR/bin/activate" || { echo "❌ Error: No se pudo activar el entorno virtual."; exit 1; }
-echo "Entorno virtual activado."
+source "$VENV_DIR/bin/activate"
+echo "✅ Virtual environment activated."
 
 echo "[2/5] Instalando dependencias de Python..."
 pip install --upgrade pip
 pip install flask requests matplotlib numpy plotly
-echo "Dependencias instaladas."
+echo "✅ Dependencies installed."
 
-echo "[3/5] Compilando código ensamblador..."
-nasm -f elf64 "$SRC_DIR/convert.asm" -o "$SRC_DIR/convert.o"
+echo "[3/5] Compiling 32-bit assembler..."
+nasm -f elf32 "$SRC_DIR/convert.asm" -o "$SRC_DIR/convert.o"
 
-echo "[4/5] Compilando y enlazando C + ASM en $LIB_NAME..."
-gcc -fPIC -shared "$SRC_DIR/main.c" "$SRC_DIR/convert.o" -o "$SRC_DIR/$LIB_NAME"
+echo "[4/5] Compiling and linking C + ASM into $LIB_NAME (32-bit)..."
+gcc -m32 -fPIC -shared "$SRC_DIR/main.c" "$SRC_DIR/convert.o" -o "$SRC_DIR/$LIB_NAME"
 
-echo "[5/5] Compilación finalizada. Librería creada en: $SRC_DIR/$LIB_NAME"
+echo "[5/5] ✅ Build complete. Shared library created at: $SRC_DIR/$LIB_NAME"
 ls -lh "$SRC_DIR/$LIB_NAME"
 
 echo ""
-echo "Todo listo. Para iniciar tu aplicación Flask:"
+echo "🚀 To start your Flask app, run:"
 echo ""
 echo "./scripts/run.sh"
 echo ""
-echo "Asegurate de que tenga permisos de ejecución:"
-echo "chmod +x scripts/run_flask.sh"
+echo "Ensure it has execution permissions:"
+echo "chmod +x scripts/run.sh"
 echo ""
-echo "Una vez iniciada, accedé en tu navegador a:"
+echo "Then access:"
 echo "http://localhost:5000"
+
