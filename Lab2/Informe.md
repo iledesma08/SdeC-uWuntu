@@ -198,6 +198,134 @@ Aquí podemos visualizar el estado del área de memoria que contiene el stack an
 
 ...
 
+# Análisis del movimiento del stack antes, después y durante la llamada a `convert`
+
+## 1. Antes de llamar a `convert`
+
+**Breakpoint en `convertion`**
+
+![](./Img/breakpoint_preconvert.png)
+
+- Estamos dentro de `main()`, en la función `convertion()`.
+- Todavía no se llamó a la función `convert`.
+- El stack contiene:
+  - La dirección de retorno hacia `main`.
+  - Variables locales de `main`.
+  - Parámetros pasados a `convertion`: `input`, `output`, `length`.
+
+**Stack en este punto:**
+
+![](./Img/Pre_Convertion_Stack.png)
+
+
+## 2. Durante la ejecución dentro de `convert`, previo a ejecutar `push ebp`
+
+Una vez que la función `convert` comienza su ejecución, el stack se organiza siguiendo la convención `cdecl`, respetando el nuevo marco (`stack frame`).
+
+**Stack luego de hacer el llamado a la función `convert`:**
+
+![](./Img/Post_Convert_Call.png)
+
+### Análisis:
+
+En este momento:
+
+- La función `convert(float value)` recién acaba de ser llamada.
+- El `CALL` a `convert` ya sucedió, por lo tanto en el stack ya está:
+  - La dirección de retorno a `convertion` (para cuando `convert` termine).
+  - El parámetro pasado a `convert` (el `float value`).
+
+### Relación con la convención de llamadas (`cdecl`):
+
+- **Parámetros**: Se pasan en la pila, de derecha a izquierda (en este caso, un único `float`).
+- **Dirección de retorno**: Se guarda automáticamente por la instrucción `CALL`.
+- Todavía no se ha creado el nuevo marco de pila (`frame`) de `convert`. Eso sucede justo en el siguiente paso (`push ebp` y `mov ebp, esp`).
+
+### Stack antes del `push ebp`
+
+| Dirección | Contenido                  | Descripción                        |
+|:----------|:----------------------------|:-----------------------------------|
+| [esp]     | Dirección de retorno         | A `convertion` (después del `call`) |
+| [esp+4]   | Argumento `float` (`38.5f`)   | El valor pasado a `convert`         |
+
+## 3. Luego de ejecutar `push ebp`
+
+**Stack luego de hacer `push ebp` dentro de `convert`**
+
+![](./Img/Post_PUSH_Stack.png)
+
+### Análisis:
+
+En este momento:
+
+- Se acaba de ejecutar `push ebp`, como primer instrucción de la función `convert`.
+- Esto es parte de la creación del nuevo frame de pila estándar en C (`cdecl`).
+
+### Relación con la convención de llamadas (`cdecl`):
+
+- **push ebp**: Guarda el valor anterior de `ebp` para poder restaurarlo al salir de la función.
+
+### ¿Qué queda en el stack?
+
+| Dirección | Contenido                  | Descripción                       |
+|:----------|:----------------------------|:----------------------------------|
+| [esp]     | Valor anterior de `ebp`      | Marco de pila anterior guardado.  |
+| [esp+4]   | Dirección de retorno         | A `convertion`                    |
+| [esp+8]   | Argumento `float` (`38.5f`)   | El valor a convertir en `convert` |
+
+
+## 4. Ejecución de instrucciones que no afectan al stack
+
+- `mov ebp, esp` crea el nuevo stack frame.
+- El argumento se accede mediante la posición relativa `[ebp+8]`.
+- Variables locales temporales se manejan en espacio reservado `[ebp-4]`.
+- `eax` se utiliza como registro de retorno, como dicta la convención estándar de llamadas en x86 (`cdecl`).
+- `mov esp, ebp` destruye el marco de pila.
+
+## 5. Ejecución de `pop ebp` 
+
+Después de terminar el cuerpo de la función `convert`, se ejecuta `pop ebp`.
+
+### ¿Qué hace `pop ebp`?
+
+- Toma el valor en lo más alto del stack (`esp`) y lo carga en `ebp`.
+- Este valor es el antiguo `ebp` de la función `convertion`.
+- Se restablece el stack frame original antes de entrar en `convert`.
+
+**Stack después de `pop ebp`:**
+
+| Dirección | Contenido                | Descripción                        |
+|:----------|:--------------------------|:-----------------------------------|
+| [esp]     | Dirección de retorno       | Dirección donde continuar (`convertion`).
+| [esp+4]   | Argumento `float` (38.5f)   | El valor original pasado a `convert`.
+
+**Estado del stack:**
+
+![](./Img/Post_POP_Stack.png)
+
+
+## 6. Ejecución de `ret` (retornar a `convertion`)
+
+Luego de restaurar `ebp`, se ejecuta la instrucción `ret`.
+
+### ¿Qué hace `ret`?
+
+- Extrae el valor que hay en `[esp]` (la dirección de retorno).
+- Salta a esa dirección (vuelve a `convertion`, justo después del `call convert`).
+- Incrementa automáticamente `esp` para limpiar el stack.
+
+### **Después de `ret`:**
+- El stack queda igual que estaba antes de hacer `call convert`.
+- Se elimina la dirección de retorno del stack.
+- Se sigue ejecutando `convertion` normalmente.
+
+**Estado del stack:**
+
+![](./Img/Pre_Convertion_Stack.png)
+
+
+---
+
 ## ✅ Conclusión
 
 Este trabajo demuestra cómo una arquitectura de capas puede facilitar el desarrollo de soluciones robustas y eficientes. Utilizar diferentes lenguajes según su nivel de abstracción permite optimizar el rendimiento, la claridad del código y su mantenimiento 🧠.
