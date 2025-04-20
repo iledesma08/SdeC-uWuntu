@@ -13,14 +13,14 @@
 
 ---
 
-## 📌 Introducción
+## Introducción
 
 En los sistemas compuestos por hardware y software, se utilizan arquitecturas de capas para desarrollar aplicaciones complejas. En las capas superiores se trabaja se suelen implementar con lenguajes de más alto nivel más amigables para realizar interfaces de usuario UI. En la capa más inferior, se suele colocar procesos más performantes y a su vez más cercanos con el hardware.
 En este trabajo se aplicará esta arquitectura de capas colocando varios lenguajes de diferentes niveles para lograr aplicar este concepto, donde utilizaremos Python para realizar una interfaz y aplicar las consultas a la API de 'WorldBank' acerca de los Índices GINI, luego en el lenguaje 'C' se aplicaran dos iteraciones o pasos para este trabajo.
 
 * Primera Iteración: Se utilizará el lenguaje 'C' para procesar estos datos provenientes de la API de una manera más performante de lo que haría Python y demostrando una segunda capa inferior.
   
-* Segunda Iteración: Luego de aplicar esta capa en 'C', el procesado matemático de estos datos se lo hará en Netwide Assembler o 'NASM', de maner que se pueda demostrar una capa más cercana al hardware y mucho más performante (Generalmente esto se aplica en proceso de datos que requieren un tiempo mínimo y específico), la idea de este trabajo es demostrar esa posibilidad de integrar varios lenguajes para formar una aplicación.
+* Segunda Iteración: Luego de aplicar esta capa en 'C', el procesado matemático de estos datos se lo hará en Netwide Assembler o 'NASM', de manera que se pueda demostrar una capa más cercana al hardware y mucho más performante (Generalmente esto se aplica en proceso de datos que requieren un tiempo mínimo y específico), la idea de este trabajo es demostrar esa posibilidad de integrar varios lenguajes para formar una aplicación.
   
 Recordemos que los lenguajes de bajo nivel están entre uno de los primeros intentos de la humanidad de despegar de la programación directa en lenguaje de máquina. Así el "ensamblador" es un lenguaje propio de la arquitectura y un intento de construir un lenguaje más accesible con el programador.
 Los lenguajes de alto nivel, para controlar el hardware y su interacción con los sistemas físicos que lo rodean, necesitan acceder al hardware a través de los lenguajes de bajo nivel. Para ello utilizan convenciones de llamadas.
@@ -28,9 +28,9 @@ Entender cómo funciona una convención de llamada nos acercará a un conocimien
 
 Este trabajo práctico aplica dicha arquitectura, combinando lenguajes de diferentes niveles para demostrar cómo se integran en una solución funcional:
 
-- 🐍 **Python** Será utilizado para implementar la interfaz y obtener los índices GINI desde la API de WorldBank.
-- 💡 **C** Procesará los datos de manera más eficiente, funcionando como una capa intermedia.
-- 🛠️ **NASM** (Netwide Assembler) Realizará el cálculo matemático final, demostrando el uso de una capa de bajo nivel altamente performante.
+- **Python** Será utilizado para implementar la interfaz y obtener los índices GINI desde la API de WorldBank.
+- **C** Procesará los datos de manera más eficiente, funcionando como una capa intermedia.
+- **NASM** (Netwide Assembler) Realizará el cálculo matemático final, demostrando el uso de una capa de bajo nivel altamente performante.
 
 El objetivo es evidenciar cómo cada lenguaje cumple un rol dentro de una estructura organizada, y cómo se comunican mediante convenciones de llamada.
 
@@ -38,15 +38,16 @@ El objetivo es evidenciar cómo cada lenguaje cumple un rol dentro de una estruc
   <img src='./Img/Capas.png' alt='Arquitectura de Capas' width='300'/>
 </p>
 
+---
 
-## ⚙️ Desarrollo
+## Desarrollo
 
-### 🔁 Primera Iteración
+### Primera Iteración
 
 En esta primera iteración del trabajo, se tomarán datos de la API acerca del índice GINI en Argentina a lo largo de los años, donde estos datos son entregados en formato 'JSON' tomando mediante un lenguaje de alto nivel (python), luego este llamará a una función definida en un lenguaje de menor nivel, en este caso 'C', la cual hará la conversión de los datos flotantes a tipo entero y luego se le sumará 1(uno).
 
-- Conversión de valores flotantes a enteros 🔢
-- Suma de 1 a cada valor como validación del procesamiento ➕
+- Conversión de valores flotantes a enteros 
+- Suma de 1 a cada valor como validación del procesamiento 
 
 Para esto, se utiliza `ctypes` para cargar dinámicamente una librería compartida (`main.so`) y definir el tipo de parámetros esperados. Proveniente de la compilación del código escrito y tal como sería implementar una librería de funciones. Al principio, nos resultó particularmente raro esto debido a que como parámetros de nuestra función en 'C', se reciben punteros a arreglos de valores de punto flotante, lo cual el python, como es un lenguaje de bajo tipado, lo primero que se nos viene a la cabeza es la forma de pasar estos parámetros. Para ello se utiliza también esta librería que permite especificar cada parámetro y valor de retorno de nuestra función.
 
@@ -54,15 +55,13 @@ Para esto, se utiliza `ctypes` para cargar dinámicamente una librería comparti
 def convertion(input, output, length):
     main_c.convertion(input, output, length)
 
-# Load the shared C library
 lib_path = os.path.join(os.path.dirname(__file__), 'main.so')
 main_c = ctypes.CDLL(lib_path)
 
-# Define argument and return types for the C function
 main_c.convertion.argtypes = (
-    ctypes.POINTER(ctypes.c_float),  # float* input
-    ctypes.POINTER(ctypes.c_int),    # int* output
-    ctypes.c_int                     # int length
+    ctypes.POINTER(ctypes.c_float),  
+    ctypes.POINTER(ctypes.c_int),   
+    ctypes.c_int                    
 )
 main_c.convertion.restype = ctypes.c_void_p
 
@@ -92,10 +91,9 @@ sequenceDiagram
     ScriptPython->>Matplotlib: plt.plot(year, value_c)
     Matplotlib-->>Usuario: Muestra gráfico (GINI vs Año)
 ```
+---
 
-...
-
-### 🧮 Segunda Iteración
+### Segunda Iteración
 
 En esta segunda iteración, se agregará una capa aún más inferior delegando la tarea de cálculo a 'NASM' aplicando además la convención de llamadas.
 Además se migrará la interfaz de usuario (UI) a una página web local corrida mediante Flask en Python, donde mediante una petición GET es posible obtener el gráfico (Con los datos ya calculados y pasando por las capas inferiores) para cada país mediante un código deniminado 'Country_Code' Código ISO 3166-1 alpha-3.
@@ -138,6 +136,8 @@ def get_data(country_code:str) -> tuple:
     else:
         return None, None
 ```
+
+---
 
 #### Diagrama de Secuencia Completo de la App GINI
 
@@ -192,15 +192,11 @@ Mediante esto, podemos correr en un servidor local una página que nos permite a
   <img src='./Img/gini.png' alt='Diagramado del índice' width='850'/>
 </p>
 
+---
 
-#### Análisis con GDB
-Aquí podemos visualizar el estado del área de memoria que contiene el stack antes y después de la llamada a la función de assembler.
+## Análisis del movimiento del stack antes, después y durante la llamada a `convert` con GDB
 
-...
-
-# Análisis del movimiento del stack antes, después y durante la llamada a `convert`
-
-## 1. Antes de llamar a `convert`
+### 1. Antes de llamar a `convert`
 
 **Breakpoint en `convertion`**
 
@@ -218,7 +214,7 @@ Aquí podemos visualizar el estado del área de memoria que contiene el stack an
 ![](./Img/Pre_Convertion_Stack.png)
 
 
-## 2. Durante la ejecución dentro de `convert`, previo a ejecutar `push ebp`
+### 2. Durante la ejecución dentro de `convert`, previo a ejecutar `push ebp`
 
 Una vez que la función `convert` comienza su ejecución, el stack se organiza siguiendo la convención `cdecl`, respetando el nuevo marco (`stack frame`).
 
@@ -226,7 +222,7 @@ Una vez que la función `convert` comienza su ejecución, el stack se organiza s
 
 ![](./Img/Post_Convert_Call.png)
 
-### Análisis:
+#### Análisis:
 
 En este momento:
 
@@ -235,37 +231,37 @@ En este momento:
   - La dirección de retorno a `convertion` (para cuando `convert` termine).
   - El parámetro pasado a `convert` (el `float value`).
 
-### Relación con la convención de llamadas (`cdecl`):
+#### Relación con la convención de llamadas (`cdecl`):
 
 - **Parámetros**: Se pasan en la pila, de derecha a izquierda (en este caso, un único `float`).
 - **Dirección de retorno**: Se guarda automáticamente por la instrucción `CALL`.
 - Todavía no se ha creado el nuevo marco de pila (`frame`) de `convert`. Eso sucede justo en el siguiente paso (`push ebp` y `mov ebp, esp`).
 
-### Stack antes del `push ebp`
+#### Stack antes del `push ebp`
 
 | Dirección | Contenido                  | Descripción                        |
 |:----------|:----------------------------|:-----------------------------------|
 | [esp]     | Dirección de retorno         | A `convertion` (después del `call`) |
 | [esp+4]   | Argumento `float` (`38.5f`)   | El valor pasado a `convert`         |
 
-## 3. Luego de ejecutar `push ebp`
+### 3. Luego de ejecutar `push ebp`
 
 **Stack luego de hacer `push ebp` dentro de `convert`**
 
 ![](./Img/Post_PUSH_Stack.png)
 
-### Análisis:
+#### Análisis:
 
 En este momento:
 
 - Se acaba de ejecutar `push ebp`, como primer instrucción de la función `convert`.
 - Esto es parte de la creación del nuevo frame de pila estándar en C (`cdecl`).
 
-### Relación con la convención de llamadas (`cdecl`):
+#### Relación con la convención de llamadas (`cdecl`):
 
 - **push ebp**: Guarda el valor anterior de `ebp` para poder restaurarlo al salir de la función.
 
-### ¿Qué queda en el stack?
+#### ¿Qué queda en el stack?
 
 | Dirección | Contenido                  | Descripción                       |
 |:----------|:----------------------------|:----------------------------------|
@@ -274,7 +270,7 @@ En este momento:
 | [esp+8]   | Argumento `float` (`38.5f`)   | El valor a convertir en `convert` |
 
 
-## 4. Ejecución de instrucciones que no afectan al stack
+### 4. Ejecución de instrucciones que no afectan al stack
 
 - `mov ebp, esp` crea el nuevo stack frame.
 - El argumento se accede mediante la posición relativa `[ebp+8]`.
@@ -282,11 +278,11 @@ En este momento:
 - `eax` se utiliza como registro de retorno, como dicta la convención estándar de llamadas en x86 (`cdecl`).
 - `mov esp, ebp` destruye el marco de pila.
 
-## 5. Ejecución de `pop ebp` 
+### 5. Ejecución de `pop ebp` 
 
 Después de terminar el cuerpo de la función `convert`, se ejecuta `pop ebp`.
 
-### ¿Qué hace `pop ebp`?
+#### ¿Qué hace `pop ebp`?
 
 - Toma el valor en lo más alto del stack (`esp`) y lo carga en `ebp`.
 - Este valor es el antiguo `ebp` de la función `convertion`.
@@ -304,17 +300,17 @@ Después de terminar el cuerpo de la función `convert`, se ejecuta `pop ebp`.
 ![](./Img/Post_POP_Stack.png)
 
 
-## 6. Ejecución de `ret` (retornar a `convertion`)
+### 6. Ejecución de `ret` (retornar a `convertion`)
 
 Luego de restaurar `ebp`, se ejecuta la instrucción `ret`.
 
-### ¿Qué hace `ret`?
+#### ¿Qué hace `ret`?
 
 - Extrae el valor que hay en `[esp]` (la dirección de retorno).
 - Salta a esa dirección (vuelve a `convertion`, justo después del `call convert`).
 - Incrementa automáticamente `esp` para limpiar el stack.
 
-### **Después de `ret`:**
+#### **Después de `ret`:**
 - El stack queda igual que estaba antes de hacer `call convert`.
 - Se elimina la dirección de retorno del stack.
 - Se sigue ejecutando `convertion` normalmente.
@@ -326,15 +322,15 @@ Luego de restaurar `ebp`, se ejecuta la instrucción `ret`.
 
 ---
 
-## ✅ Conclusión
+## Conclusión
 
-Este trabajo demuestra cómo una arquitectura de capas puede facilitar el desarrollo de soluciones robustas y eficientes. Utilizar diferentes lenguajes según su nivel de abstracción permite optimizar el rendimiento, la claridad del código y su mantenimiento 🧠.
+Este trabajo demuestra cómo una arquitectura de capas puede facilitar el desarrollo de soluciones robustas y eficientes. Utilizar diferentes lenguajes según su nivel de abstracción permite optimizar el rendimiento, la claridad del código y su mantenimiento.
 
 Integrar Python, C y NASM no solo permitió mejorar el desempeño de las operaciones matemáticas, sino también adquirir un entendimiento más profundo de la interacción entre software de alto nivel y el hardware subyacente.
 
-## 📚 Bibliografía
+## Bibliografía
 
-* [📖 Paul A. Carter - PCASM](http://pacman128.github.io/pcasm/)
-* [📄 Documentación API WorldBank](https://documents.worldbank.org/en/publication/documents-reports/api)
-* [🐍 Flask - RealPython](https://realpython.com/api-integration-in-python/)
+* [Paul A. Carter - PCASM](http://pacman128.github.io/pcasm/)
+* [Documentación API WorldBank](https://documents.worldbank.org/en/publication/documents-reports/api)
+* [Flask - RealPython](https://realpython.com/api-integration-in-python/)
 

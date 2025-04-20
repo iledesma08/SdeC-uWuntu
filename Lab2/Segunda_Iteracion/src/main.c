@@ -2,21 +2,21 @@
 #include <stdlib.h>
 
 /**
- * @param value value to perform operation
- * @brief This function parse the value to Int and increments the value.
+ * @param value Valor sobre el cual se realiza la operación.
+ * @brief Esta función convierte el valor a entero e incrementa su valor en 1.
  */
 extern int convert(float value);
 
 /**
- * @brief Converts an array of floating-point numbers to an array of integers.
+ * @brief Convierte un arreglo de números de punto flotante a un arreglo de enteros.
  *
- * This function takes an input array of floating-point numbers and converts
- * each element to an integer using the `convert` function. The converted
- * integers are stored in the output array.
+ * Esta función toma un arreglo de entrada de números de punto flotante y convierte
+ * cada elemento a un entero utilizando la función `convert`. Los enteros convertidos
+ * se almacenan en el arreglo de salida.
  *
- * @param input Pointer to the input array of floating-point numbers.
- * @param output Pointer to the output array where converted integers will be stored.
- * @param length The number of elements in the input and output arrays.
+ * @param input Puntero al arreglo de números de punto flotante de entrada.
+ * @param output Puntero al arreglo donde se almacenarán los enteros convertidos.
+ * @param length La cantidad de elementos en los arreglos de entrada y salida.
  */
 void convertion(float* input, int* output, int length) {
     for (int i = 0; i < length; i++) {
