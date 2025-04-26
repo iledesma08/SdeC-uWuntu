@@ -12,7 +12,7 @@
 
 ---
 
-## Introducción
+# Introducción
 En los sistemas operativos modernos, las arquitecturas de procesadores fueron evolucionando para ofrecer diferentes modos de operación, tal como **Modo Real** y **Modo Protegido**; El primero se trata de la primera forma en la que se operaban los procesadores x86, fué diseñado para ser simple y permitir una ejecución directa de las instrucciones, mientras que el segundo permitió aprovechar características avanzadas de protección y de multitarea.
 
 | Característica              | Modo Real                   | Modo Protegido               |
@@ -25,8 +25,10 @@ En los sistemas operativos modernos, las arquitecturas de procesadores fueron ev
 
 El uso hoy en día del modo real se limita sólamente al proceso de arranque, donde los sistemas operativos arrancan en modo real para ejecutar las rutinas iniciales del BIOS o UEFI, incluyendo la verificación del hardware y la carga del bootloader.
 
-## Desarrollo
-### UEFI y Coreboot
+---
+
+# Desarrollo
+## UEFI y Coreboot
 
 **UEFI (Unified Extensible Firmware Interface)** es una interfaz moderna entre el firmware del hardware y el sistema operativo que reemplaza al antiguo BIOS (Basic Input Output System) que tradicionalmente es basado en texto con configuraciones ajustadas mediante teclas específicas (modo real, teclado), esto nos permite iniciar el hardware para luego arrancar el sistema operativo; Para utilizarlo, al encender la computadora, presionando una tecla como `F2`, `Del` o `Esc` donde accedemos a UEFI desde una interfaz operativa donde es posible configurar el hardware, el orden de booteo, y demás.
 
@@ -88,7 +90,7 @@ Es posible crear nuestra propia imágen booteable simplemente respetando la estr
 
 ---
 
-# Linker
+## Linker
 Un **linker** se trata de una herramienta que toma varios archivos de objetos generados por el compilador y los combina en un único ejecutable, es el encargado de resolver referencias a funciones y variables entre archivos.
 
 La dirección que aparece en el script del linker, es la dirección de memoria donde el programa se cargará o ejecutará. Es necesaria para que el linker ubique correctamente el código, datos y secciones, y para que el sistema operativo (o el bootloader) sepa dónde colocarlo en RAM.
@@ -153,11 +155,11 @@ msg:
     .asciz "hello world"
 ```
 
-## Comandos utilizados para la construcción y ejecución
+### Comandos utilizados para la construcción y ejecución
 
 Para ensamblar, enlazar y ejecutar el programa, se utilizan tres comandos fundamentales:
 
-### 1. Ensamblado: `as -g -o main.o main.s`
+#### 1. Ensamblado: `as -g -o main.o main.s`
 
 Este comando invoca el assembler de GNU (`as`) para convertir el código fuente en ensamblador (`main.s`) en un archivo objeto (`main.o`).
 
@@ -168,7 +170,7 @@ Este comando invoca el assembler de GNU (`as`) para convertir el código fuente 
 Se genera un archivo objeto que contiene el código en formato intermedio, aún no ejecutable.
 
 
-### 2. Enlace: `ld --oformat binary -o main.img -T link.ld main.o`
+#### 2. Enlace: `ld --oformat binary -o main.img -T link.ld main.o`
 
 Este comando utiliza el linker de GNU (`ld`) para transformar el archivo objeto en una imagen binaria lista para ser cargada directamente en memoria por el BIOS.
 
@@ -180,7 +182,7 @@ Este comando utiliza el linker de GNU (`ld`) para transformar el archivo objeto 
 Se obtiene `main.img`. Un archivo binario plano que contiene el programa y la firma de booteo (`0xAA55`), apto para ser reconocido por el BIOS como un sector de arranque válido.
 
 
-### 3. Ejecución: `qemu-system-x86_64 -drive format=raw,file=main.img`
+#### 3. Ejecución: `qemu-system-x86_64 -drive format=raw,file=main.img`
 
 Finalmente, este comando inicia una máquina virtual utilizando QEMU, emulando una computadora x86 de 64 bits, y le indica que utilice la imagen generada como disco de arranque.
 
@@ -195,37 +197,45 @@ El sistema emulado carga la imagen en memoria, ejecuta el programa en modo real 
 
 <p align="center"><b>Fig 2. </b>Ejemplo Hello World</p>
 
-## Comparación entre `objdump` y `hd`
+### Comparación entre `objdump` y `hd`
 Se puede usar `objdump -h` para ver en qué direcciones fueron ubicadas las secciones (`.text`, `.data`, `.bss`) y `hd` (hexdump) para ver la imagen binaria.
 
 Se verifica así dónde fue colocado el programa dentro de la imagen.
-
-## Grabar la imagen en un pendrive y probar
-(En esta parte se debe grabar la imagen usando `dd` u otra herramienta y luego probar en una PC. Adjuntar una foto como evidencia.)
 
 ## ¿Para qué se utiliza la opción `--oformat binary` en el linker?
 Se usa para generar un archivo binario "plano", es decir, solo los datos en bruto, sin cabeceras de formatos ejecutables como ELF o PE. Es útil para sistemas embebidos o bootloaders.
 
 ---
 
-# Modo Protegido
+## Modo Protegido
 
-## Programa con dos descriptores de memoria (código y datos)
+### Programa con dos descriptores de memoria (código y datos)
 Se deben crear dos descriptores en la GDT:
 - Uno para el segmento de código (solo lectura y ejecución).
 - Uno para el segmento de datos (lectura/escritura).
 
-## Cambiar bits de acceso del segmento de datos a solo lectura
+### Cambiar bits de acceso del segmento de datos a solo lectura
 Si se modifica el descriptor para que el segmento de datos sea solo lectura y luego se intenta escribir:
 - Debería lanzarse una excepción de protección general (#GP).
 - El sistema operativo o el manejador de excepciones debería actuar.
 
 Esto puede verificarse en `gdb` generando la falla.
 
-## ¿Con qué valor se cargan los registros de segmento en modo protegido? ¿Por qué?
+### ¿Con qué valor se cargan los registros de segmento en modo protegido? ¿Por qué?
 Se cargan con el **selector** de la GDT correspondiente, no directamente con una dirección. El selector contiene el índice de entrada en la GDT y privilegios.
 
 Esto es necesario porque en modo protegido no se trabaja directamente con direcciones físicas, sino con descriptores que definen propiedades del segmento (base, límite, permisos).
 
 
-## Conclusión
+# Conclusión
+
+# Bibliografías
+ [Paso Modo Protegido x86](http://sistemasdecomputacionunc.blogspot.com/2014/04/paso-modo-protegido-x86.html)
+
+ [Tutorial sobre la GDT](https://wiki.osdev.org/GDT_Tutorial)
+
+ [Estructuras de Datos para GDT y LDT](https://stackoverflow.com/questions/25762625/file-in-which-the-data-structure-for-global-descriptor-and-local-descriptor-tabl)  
+
+ [El mundo del Modo Protegido](http://www.osdever.net/tutorials/view/the-world-of-protected-mode)
+
+ [Ejemplos bare-metal de x86](https://github.com/cirosantilli/x86-bare-metal-examples)
