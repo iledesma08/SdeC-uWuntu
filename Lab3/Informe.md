@@ -99,4 +99,11 @@ Finalmente, este comando inicia una máquina virtual utilizando QEMU, emulando u
 
 - `-drive format=raw,file=main.img` especifica de manera explícita que la imagen es de tipo RAW (binario plano) y proporciona la ruta del archivo.
 
-El sistema emulado carga la imagen en memoria, ejecuta el programa en modo real y muestra el mensaje `"hello world"` utilizando servicios del BIOS.
+El sistema emulado carga la imagen en memoria, ejecuta el programa en modo real y muestra el mensaje `"hello world"` utilizando servicios del BIOS. Como se puede observar a continuación:
+
+
+<p align="center">
+  <img src="./Img/QEMU_HelloWorld.jpeg" width="600"/>
+</p>
+
+<p align="center"><b>Fig 2. </b>Ejemplo Hello World</p>
