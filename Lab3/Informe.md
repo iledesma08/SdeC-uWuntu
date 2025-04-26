@@ -92,19 +92,6 @@ Es posible crear nuestra propia imágen booteable simplemente respetando la estr
 # Linker
 Un **linker** se trata de una herramienta que toma varios archivos de objetos generados por el compilador y los combina en un único ejecutable, es el encargado de resolver referencias a funciones y variables entre archivos.
 
-La dirección que aparece en el script del linker, es la dirección de memoria donde el programa se cargará o ejecutará. Es necesaria para que el linker ubique correctamente el código, datos y secciones, y para que el sistema operativo (o el bootloader) sepa dónde colocarlo en RAM.
-
-## Comparación entre `objdump` y `hd`
-Se puede usar `objdump -h` para ver en qué direcciones fueron ubicadas las secciones (`.text`, `.data`, `.bss`) y `hd` (hexdump) para ver la imagen binaria.
-
-Se verifica así dónde fue colocado el programa dentro de la imagen.
-
-## Grabar la imagen en un pendrive y probar
-(En esta parte se debe grabar la imagen usando `dd` u otra herramienta y luego probar en una PC. Adjuntar una foto como evidencia.)
-
-## ¿Para qué se utiliza la opción `--oformat binary` en el linker?
-Se usa para generar un archivo binario "plano", es decir, solo los datos en bruto, sin cabeceras de formatos ejecutables como ELF o PE. Es útil para sistemas embebidos o bootloaders.
-
 ---
 
 # Modo Protegido
@@ -130,3 +117,9 @@ Esto es necesario porque en modo protegido no se trabaja directamente con direcc
 ## Conclusión
 
 
+## Bibliografías
+ [Paso Modo Protegido x86](http://sistemasdecomputacionunc.blogspot.com/2014/04/paso-modo-protegido-x86.html)
+ [Tutorial sobre la GDT](https://wiki.osdev.org/GDT_Tutorial)
+ [Estructuras de Datos para GDT y LDT](https://stackoverflow.com/questions/25762625/file-in-which-the-data-structure-for-global-descriptor-and-local-descriptor-tabl)  
+ [El mundo del Modo Protegido](http://www.osdever.net/tutorials/view/the-world-of-protected-mode)
+ [Ejemplos bare-metal de x86](https://github.com/cirosantilli/x86-bare-metal-examples)
