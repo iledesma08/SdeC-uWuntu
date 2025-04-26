@@ -230,7 +230,7 @@ Un programa de este tipo debería:
   - Salta al modo protegido (`ljmp`).
   - En modo protegido (`.code32`): configura los registros de segmento y ejecuta operaciones.
 
-#### 🖊️ de código en GAS
+#### Ejemplo de código en GAS
 
 ```assembly
 .code16
@@ -290,7 +290,11 @@ Si el **segmento de datos** se configura como **solo lectura** (`Access byte = 0
 - ⚠️ Como **no hay IDT** cargada, el procesador **salta a una dirección aleatoria**.
 - ❌ Comienza a interpretar basura como código (ej. `add %al, (%eax)`).
 
-![alt text](image.png)
+<p align="center">
+  <img src="./Img/protected.png" width="600"/>
+</p>
+
+<p align="center"><b>Fig 3. </b>General Protection Fault sin Handler</p>
 
 #### 🧠 Conclusión importante
 
