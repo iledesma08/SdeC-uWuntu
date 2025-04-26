@@ -13,4 +13,6 @@ SECTIONS
         . = 0x1FE;
         SHORT(0xAA55)
     }
+    .data : { *(.data) }
+    .bss  : { *(.bss)  }
 }

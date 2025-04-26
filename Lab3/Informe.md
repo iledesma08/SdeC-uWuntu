@@ -190,7 +190,6 @@ Finalmente, este comando inicia una máquina virtual utilizando QEMU, emulando u
 
 El sistema emulado carga la imagen en memoria, ejecuta el programa en modo real y muestra el mensaje `"hello world"` utilizando servicios del BIOS. Como se puede observar a continuación:
 
-
 <p align="center">
   <img src="./Img/QEMU_HelloWorld.jpeg" width="600"/>
 </p>
@@ -207,25 +206,139 @@ Se usa para generar un archivo binario "plano", es decir, solo los datos en brut
 
 ---
 
-## Modo Protegido
+# 🛡️ Desafío Final: Modo Protegido
 
-### Programa con dos descriptores de memoria (código y datos)
-Se deben crear dos descriptores en la GDT:
-- Uno para el segmento de código (solo lectura y ejecución).
-- Uno para el segmento de datos (lectura/escritura).
+### 1. ¿Cómo sería un programa que tenga dos descriptores de memoria diferentes, uno para cada segmento (código y datos) en espacios de memoria diferenciados?
 
-### Cambiar bits de acceso del segmento de datos a solo lectura
-Si se modifica el descriptor para que el segmento de datos sea solo lectura y luego se intenta escribir:
-- Debería lanzarse una excepción de protección general (#GP).
-- El sistema operativo o el manejador de excepciones debería actuar.
+Un programa de este tipo debería:
 
-Esto puede verificarse en `gdb` generando la falla.
+- **Definir una GDT (Global Descriptor Table)** con al menos **tres descriptores**:
+  1. Descriptor **nulo** (obligatorio).
+  2. Descriptor de **código**: ejecución y lectura (`Access byte = 0x9A`).
+  3. Descriptor de **datos**: lectura y escritura (`Access byte = 0x92`) o solo lectura (`Access byte = 0x90`).
 
-### ¿Con qué valor se cargan los registros de segmento en modo protegido? ¿Por qué?
-Se cargan con el **selector** de la GDT correspondiente, no directamente con una dirección. El selector contiene el índice de entrada en la GDT y privilegios.
+- **Ubicar** el código y los datos en **regiones distintas de memoria**.
+  - Por ejemplo:
+    - Código en `0x00000000`.
+    - Datos en `0x00100000`.
 
-Esto es necesario porque en modo protegido no se trabaja directamente con direcciones físicas, sino con descriptores que definen propiedades del segmento (base, límite, permisos).
+- **Secuencia del programa**:
+  - Arranca en modo real (`.code16`).
+  - Desactiva interrupciones (`cli`).
+  - Carga la GDT (`lgdt`).
+  - Activa el modo protegido (`movl %cr0, %eax; orl $0x1, %eax; movl %eax, %cr0`).
+  - Salta al modo protegido (`ljmp`).
+  - En modo protegido (`.code32`): configura los registros de segmento y ejecuta operaciones.
 
+#### 🖊️ de código en GAS
+
+```assembly
+.code16
+.global _start
+_start:
+    cli
+    lgdt gdt_descriptor
+
+    movl %cr0, %eax
+    orl $0x1, %eax
+    movl %eax, %cr0
+
+    ljmp $0x08, $protected_mode
+
+.align 8
+gdt_start:
+    .quad 0x0000000000000000  # Descriptor nulo
+
+    # Descriptor de Código (0x08)
+    .word 0xFFFF
+    .word 0x0000
+    .byte 0x00
+    .byte 0x9A
+    .byte 0xCF
+    .byte 0x00
+
+    # Descriptor de Datos (0x10)
+    .word 0xFFFF
+    .word 0x0000
+    .byte 0x10   # Base media si quisiéramos separarlo en 0x00100000
+    .byte 0x92   # Lectura/escritura (o 0x90 para solo lectura)
+    .byte 0xCF
+    .byte 0x00
+gdt_end:
+
+gdt_descriptor:
+    .word gdt_end - gdt_start - 1
+    .long gdt_start
+
+.code32
+protected_mode:
+    movw $0x10, %ax
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %ss
+
+    # operaciones
+```
+
+### 2. Cambiar los bits de acceso del segmento de datos para que sea solo lectura, intentar escribir. ¿Qué sucede? ¿Qué debería suceder? Verificarlo con GDB.
+
+Si el **segmento de datos** se configura como **solo lectura** (`Access byte = 0x90`) y se intenta escribir en él, ocurre:
+
+- ❌ El procesador detecta una **violación de protección**.
+- ⚡ Dispara una **excepción General Protection Fault** (**#GP**).
+- 🔖 Busca en la **IDT** (Interrupt Descriptor Table) el handler para el #GP.
+- ⚠️ Como **no hay IDT** cargada, el procesador **salta a una dirección aleatoria**.
+- ❌ Comienza a interpretar basura como código (ej. `add %al, (%eax)`).
+
+![alt text](image.png)
+
+#### 🧠 Conclusión importante
+
+> **El procesador detecta la excepción, pero como no existe un handler definido para manejarla (no hay IDT cargada), el flujo de ejecución se rompe: el EIP salta a direcciones aleatorias de memoria, ejecutando basura. Esto simula un fallo de seguridad real que, en sistemas operativos, podría ser explotado para ejecutar código no autorizado o provocar caídas críticas.**
+
+#### 🔧 Verificación con GDB
+
+1. Compilamos y corremos con:
+   ```bash
+   make debug_segundo
+   ```
+
+2. GDB se conecta a QEMU y pone un breakpoint en `0x7C00`.
+
+3. Continuamos la ejecución (`c` o `continue`).
+
+4. En el momento de ejecutar:
+   ```assembly
+   movl $0x12345678, 0x00100000
+   ```
+   GDB muestra:
+   - Cambio inesperado del `EIP`.
+   - EIP saltando a direcciones como `0xE05B`.
+   - Código basura ejecutándose (`add %al, (%eax)`).
+
+5. Confirmamos que la excepción se generó pero no fue manejada.
+
+### 3. En modo protegido, ¿Con qué valor se cargan los registros de segmento? ¿Por qué?
+
+En modo protegido, los registros de segmento (`CS`, `DS`, `SS`, `ES`, `FS`, `GS`) **no almacenan direcciones** como en modo real.
+
+**Se cargan con un *selector***:
+
+- Un **selector** es un identificador especial que contiene:
+  - Un índice a la GDT (o LDT).
+  - Un bit de selector de tabla (TI).
+  - Un nivel de privilegio (RPL).
+
+Por ejemplo:
+- `movw $0x10, %ax`
+- `movw %ax, %ds`
+
+`0x10` significa:
+- Índice: `0x2` (porque 0x10 >> 3 = 2)
+- Tabla: GDT (porque TI = 0)
+- Privilegio: 0
+
+> **En modo protegido, los registros de segmento actúan como "claves" para acceder a los descriptores de segmento en la GDT, que contienen la base real, el límite y los permisos del segmento. Esto permite al procesador implementar protecciones de memoria, multitarea segura, y aïslamiento de procesos.**
 
 # Conclusión
 
