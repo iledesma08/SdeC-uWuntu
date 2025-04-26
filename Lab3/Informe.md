@@ -49,7 +49,7 @@ Desde un sistema operativo se puede hacer llamadas a funciones UEFI, como:
 | ...| ... |
 
 
-En UEFI existen varios bug, un ejemplo famoso fue **Boothole** (2020), una vulnerabilidad en GRUB2 que afectaba sistemas UEFI Secure Boot, permitiendo a atacantes ejecutar código malicioso antes del arranque del sistema operativo, otros bugs se dan por mal manejo de variables NVRAM o drivers UEFI inseguros.
+En UEFI existen varios bugs, un ejemplo famoso fue **Boothole** (2020), una vulnerabilidad en GRUB2 que afectaba sistemas UEFI Secure Boot, permitiendo a atacantes ejecutar código malicioso antes del arranque del sistema operativo, otros bugs se dan por mal manejo de variables NVRAM o drivers UEFI inseguros.
 
 - **CSME (Converged Security and Management Engine)** es una parte del hardware de Intel que maneja la seguridad y gestión del sistema de forma independiente al CPU principal. Corre en un microprocesador embebido.
 - **MEBx (Intel Management Engine BIOS Extension)** es la interfaz de configuración de esa tecnología. Permite configurar redes, contraseñas, y otras funciones de administración remota.
@@ -70,6 +70,12 @@ Lo utilizan las **Chromebooks**, **System76**, **Purism Librem**, **PC Engines A
 | **Mayor seguridad** | Evita firmware propietario cerrado que podría contener vulnerabilidades ocultas. |
 | **Flexibilidad** | Puede trabajar con payloads como SeaBIOS, Tianocore, LinuxBoot o directamente con un kernel Linux. |
 | **Menor tamaño** | El firmware generado es mucho más pequeño que un BIOS tradicional. |
+
+Es posible crear nuestra propia imágen booteable simplemente respetando la estructura clásica genérica del MBR, en la siguiente imágen se crea un archivo `.img` de manera que este produzca un `halt` en qemu (máquina virtual).
+
+<p align="center">
+  <img src="/Lab3/Img/qemu_halt.jpeg" width="600"/>
+</p>
 ---
 
 
