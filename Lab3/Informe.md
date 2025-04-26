@@ -14,7 +14,17 @@
 ---
 
 ## Introducción
+En los sistemas operativos modernos, las arquitecturas de procesadores fueron evolucionando para ofrecer diferentes modos de operación, tal como **Modo Real** y **Modo Protegido**; El primero se trata de la primera forma en la que se operaban los procesadores x86, fué diseñado para ser simple y permitir una ejecución directa de las instrucciones, mientras que el segundo permitió aprovechar características avanzadas de protección y de multitarea.
 
+| Característica              | Modo Real                   | Modo Protegido               |
+|:----------------------------|:----------------------------|:-----------------------------|
+| **Tipo de instrucciones**    | 16 bits                     | 32/64 bits                   |
+| **Protección de memoria**    | No                          |                           Sí |
+| **Multitarea**               | No                          | Sí                            |
+| **Seguridad**                | Baja, sin aislamiento       | Alta, con aislamiento entre procesos |
+| **Acceso a hardware**        | Acceso directo              | Acceso controlado y restringido |
+
+El uso hoy en día del modo real se limita sólamente al proceso de arranque, donde los sistemas operativos arrancan en modo real para ejecutar las rutinas iniciales del BIOS o UEFI, incluyendo la verificación del hardware y la carga del bootloader.
 
 ## Desarrollo
 ### UEFI y Coreboot
@@ -119,8 +129,4 @@ Esto es necesario porque en modo protegido no se trabaja directamente con direcc
 
 ## Conclusión
 
-
-## Bibliografía
-
-* []()
 
