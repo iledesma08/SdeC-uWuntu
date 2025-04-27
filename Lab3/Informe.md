@@ -190,19 +190,115 @@ Finalmente, este comando inicia una máquina virtual utilizando QEMU, emulando u
 
 El sistema emulado carga la imagen en memoria, ejecuta el programa en modo real y muestra el mensaje `"hello world"` utilizando servicios del BIOS. Como se puede observar a continuación:
 
+## Comparación entre `objdump` y `hd`
+
 <p align="center">
-  <img src="./Img/QEMU_HelloWorld.jpeg" width="600"/>
+  <img src="./Img/Hexdump.png" width="600"/>
 </p>
 
-<p align="center"><b>Fig 2. </b>Ejemplo Hello World</p>
+<p align="center"><b>Fig 3.</b> Hexdump de main.img</p>
 
-### Comparación entre `objdump` y `hd`
-Se puede usar `objdump -h` para ver en qué direcciones fueron ubicadas las secciones (`.text`, `.data`, `.bss`) y `hd` (hexdump) para ver la imagen binaria.
+<p align="center">
+  <img src="./Img/Objdump.png" width="600"/>
+</p>
 
-Se verifica así dónde fue colocado el programa dentro de la imagen.
+<p align="center"><b>Fig 4.</b> Objdump de main.img</p>
 
-## ¿Para qué se utiliza la opción `--oformat binary` en el linker?
-Se usa para generar un archivo binario "plano", es decir, solo los datos en bruto, sin cabeceras de formatos ejecutables como ELF o PE. Es útil para sistemas embebidos o bootloaders.
+A continuación, se realiza la comparación entre el contenido hexadecimal visualizado con `hd` y el desensamblado de instrucciones obtenido con `objdump` sobre el archivo `main.img`.
+
+### Análisis
+
+En la Fig 3 (Hexdump), se observan los bytes crudos de la imagen binaria, donde los primeros valores corresponden a las instrucciones del programa.  
+En la Fig 4 (Objdump), se interpreta ese contenido como instrucciones de la arquitectura i8086.
+
+La correspondencia es la siguiente:
+
+| Offset en `hd` | Bytes           | Instrucción `objdump`               |
+|:---------------|:----------------|:------------------------------------|
+| 0x00           | `be 0f 7c`       | `mov $0x7c0f, %si`                  |
+| 0x03           | `b4 0e`          | `mov $0xe, %ah`                     |
+| 0x05           | `ac`             | `lodsb`                             |
+| 0x06           | `08 c0`          | `or %al, %al`                       |
+| 0x08           | `74 04`          | `je 0xe`                            |
+| 0x0A           | `cd 10`          | `int $0x10`                         |
+| 0x0C           | `eb f7`          | `jmp 0x5`                           |
+
+Cada instrucción mostrada por `objdump` se corresponde perfectamente con los bytes visibles en el `hexdump`.  
+La secuencia es la esperada de acuerdo al programa ensamblador (`main.s`).
+
+Además, se verifica que a partir del offset `0x0E` se encuentran los datos correspondientes al mensaje `"hello world"`, codificado en ASCII, y que en el offset `0x1FE` aparece la firma de arranque `55 aa`, requerida por el BIOS para considerar el sector como booteable.
+
+### Relación entre offsets de `hd` y direcciones de memoria
+
+El comando `hd` muestra los bytes del archivo binario `main.img` desde el offset `0x00`, ya que interpreta el archivo simplemente como una secuencia de datos lineales en disco.
+
+Durante el proceso de arranque, el BIOS carga el contenido de `main.img` en la memoria RAM a partir de la dirección física `0x7C00`.  
+Por lo tanto, el byte en el offset `0x00` de `hd` corresponde al byte ubicado en `0x7C00` en memoria una vez cargado.
+
+## Debugging con GDB
+
+Podemos depurar nuestro programa `main.img` utilizando **GDB** en conjunto con **QEMU**.  
+Para ello, ejecutamos QEMU con las siguientes opciones que permiten conectar GDB al entorno de emulación:
+
+- `-s` Activa un servidor GDB en el puerto `1234`.
+- `-S` Inicia QEMU en pausa, esperando la conexión del depurador.
+- `-monitor stdio` Permite interactuar con la consola de QEMU.
+
+El comando completo sería:
+
+```bash
+qemu-system-i386 -drive format=raw,file=./scripts/main.img -boot a -s -S -monitor stdio
+```
+
+Una vez lanzado QEMU, abrimos una nueva terminal y ejecutamos `gdb`. Para enlazar GDB con QEMU se utiliza:
+
+```bash
+(gdb) target remote localhost:1234
+```
+
+Luego se configura GDB para modo real de 16 bits:
+
+```bash
+(gdb) set architecture i8086
+```
+
+### Configuración de Breakpoints
+
+Se colocaron dos breakpoints:
+
+- En `0x7C00`, correspondiente al inicio del bootloader.
+- En `0x7C05`, justo antes de comenzar la impresión del mensaje `"hello world"`.
+
+Comandos utilizados:
+
+```bash
+(gdb) break *0x7c00
+(gdb) break *0x7c05
+(gdb) continue
+```
+
+Cuando el BIOS carga el sector de arranque y salta a `0x7C00`, GDB detendrá la ejecución en el primer breakpoint.  
+Luego, al continuar la ejecución, se alcanzará el segundo breakpoint en `0x7C05`, donde comienza la carga del primer carácter del mensaje en el registro `AL`.
+
+A partir de ese punto, se puede ejecutar paso a paso (`stepi`) y observar cómo se carga e imprime cada carácter de la cadena `"hello world"` mediante la interrupción de BIOS `int 0x10`.
+
+<p align="center">
+  <img src="./Img/GDB_PreContinue.png" width="700"/>
+</p>
+
+<p align="center"><b>Fig 5.</b> QEMU detenido al arrancar, esperando conexión desde GDB.</p>
+
+<p align="center">
+  <img src="./Img/GDB_FirstBreak.png" width="700"/>
+</p>
+
+<p align="center"><b>Fig 6.</b> Primer breakpoint alcanzado en 0x7C00, inicio del bootloader.</p>
+
+<p align="center">
+  <img src="./Img/GDB_SecondBreak.png" width="700"/>
+</p>
+
+<p align="center"><b>Fig 7.</b> Segundo breakpoint alcanzado en 0x7C05, antes de comenzar la impresión del mensaje.</p>
 
 ---
 
