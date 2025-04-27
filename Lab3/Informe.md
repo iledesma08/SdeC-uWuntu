@@ -302,7 +302,7 @@ A partir de ese punto, se puede ejecutar paso a paso (`stepi`) y observar cómo 
 
 ---
 
-# 🛡️ Desafío Final: Modo Protegido
+#  Desafío Final: Modo Protegido
 
 ### 1. ¿Cómo sería un programa que tenga dos descriptores de memoria diferentes, uno para cada segmento (código y datos) en espacios de memoria diferenciados?
 
@@ -380,11 +380,11 @@ protected_mode:
 
 Si el **segmento de datos** se configura como **solo lectura** (`Access byte = 0x90`) y se intenta escribir en él, ocurre:
 
-- ❌ El procesador detecta una **violación de protección**.
-- ⚡ Dispara una **excepción General Protection Fault** (**#GP**).
-- 🔖 Busca en la **IDT** (Interrupt Descriptor Table) el handler para el #GP.
-- ⚠️ Como **no hay IDT** cargada, el procesador **salta a una dirección aleatoria**.
-- ❌ Comienza a interpretar basura como código (ej. `add %al, (%eax)`).
+-  El procesador detecta una **violación de protección**.
+-  Dispara una **excepción General Protection Fault** (**#GP**).
+-  Busca en la **IDT** (Interrupt Descriptor Table) el handler para el #GP.
+-  Como **no hay IDT** cargada, el procesador **salta a una dirección aleatoria**.
+-  Comienza a interpretar basura como código (ej. `add %al, (%eax)`).
 
 <p align="center">
   <img src="./Img/protected.png" width="600"/>
@@ -392,7 +392,7 @@ Si el **segmento de datos** se configura como **solo lectura** (`Access byte = 0
 
 <p align="center"><b>Fig 3. </b>General Protection Fault sin Handler</p>
 
-#### 🧠 Conclusión importante
+#### Conclusión importante
 
 > **El procesador detecta la excepción, pero como no existe un handler definido para manejarla (no hay IDT cargada), el flujo de ejecución se rompe: el EIP salta a direcciones aleatorias de memoria, ejecutando basura. Esto simula un fallo de seguridad real que, en sistemas operativos, podría ser explotado para ejecutar código no autorizado o provocar caídas críticas.**
 
@@ -440,9 +440,7 @@ Por ejemplo:
 
 > **En modo protegido, los registros de segmento actúan como "claves" para acceder a los descriptores de segmento en la GDT, que contienen la base real, el límite y los permisos del segmento. Esto permite al procesador implementar protecciones de memoria, multitarea segura, y aïslamiento de procesos.**
 
-# Conclusión
-
-# Bibliografías
+# Bibliografía
  [Paso Modo Protegido x86](http://sistemasdecomputacionunc.blogspot.com/2014/04/paso-modo-protegido-x86.html)
 
  [Tutorial sobre la GDT](https://wiki.osdev.org/GDT_Tutorial)
