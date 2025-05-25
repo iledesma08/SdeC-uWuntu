@@ -426,7 +426,6 @@ Este proceso confirma que tanto la función de inicialización (`init`) como la 
 <p align="center"><strong>Figura 10:</strong> Salida del comando `dmesg` que muestra los mensajes del kernel al cargar y descargar el módulo.  
 Se observa que el módulo fue cargado correctamente, ejecutando "Hello, Kernel World!", y posteriormente removido, mostrando "Goodbye, Kernel World!".</p>
 
-
 # Bibliografía
  [Arranque Seguro](https://docs.redhat.com/es/documentation/red_hat_enterprise_linux/8/html/managing_monitoring_and_updating_the_kernel/signing-kernel-modules-for-secure-boot_managing-kernel-modules)
 
