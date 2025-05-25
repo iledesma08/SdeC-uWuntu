@@ -1,4 +1,117 @@
-nacho
+<h1 align="center">📘 Universidad Nacional de Córdoba</h1>
+
+<p align="center">
+  <img src="https://cybersecurityhub.cordoba.gob.ar/wp-content/uploads/2022/02/FCEFyN-Duotono_tagline-Javier-Jorge.png" width="400"/>
+</p>
+
+---
+
+<h3 align="center">💻 SISTEMAS DE COMPUTACIÓN</h3>
+<h4 align="center">Trabajo Práctico N°4: <em>Módulos de Kernel & Llamadas a sistema</em></h4>
+<h4 align="center">Grupo: <strong>uWuntu</strong> 🚀</h4>
+
+---
+
+# Introducción
+
+Los módulos de kernel son fragmentos de código que permiten ampliar las funcionalidades del núcleo del sistema operativo sin necesidad de recompilar ni reiniciar todo el kernel. Esto es especialmente útil cuando se desea agregar nuevas funciones —como soporte para un dispositivo de hardware— sin modificar directamente el núcleo principal, que suele ser complejo y monolítico. 
+
+Dado que estos módulos interactúan directamente con el núcleo, también representan la posibilidad de tener vulnerabilidades o pueden ser creados para usos maliciosos. Para mitigar estos riesgos, los sistemas implementan mecanismos de seguridad como la verificación mediante firmas digitales o claves, asegurando que solo módulos autorizados o firmados puedan ser cargados.
+
+Las llamadas al sistema son la forma principal que los programas interactúan con el núcleo del sistema operativo, mediante esto, es posible que una aplicación soliicite servicios fundamentales como acceso a archivos, comunicación entre los procesos, adignación de memoria o el control de los dispositivos. Actúa como un puente seguro entre el espacio de usuario y el espacio del kernel, esto evita que los programas accedan directamente a los recursos del sistema operativo por razones de seguridad y estabilidad, cuando un proceso necesita realizar una operación privilegiada,  invoca una llamada al sistema específica, y el kernel se encarga de ejecutarla de forma controlada.
+
+# Desarrollo
+
+## Desafío 1
+
+La herramienta que nos facilida la creación de paquetes `.deb`, `.rpm` o `.tgz` es **checkinstall**, a partir de la instalación tradicional utilizando `make install`. En vez de copiar los archivos al sistema, intercepta esa acción y genera un paquete instalable, compatible con el gestor de paquetes de la distribución.
+- Permite conocer los paquetes instalados.
+- Mejora la distribución e instalación de paquetes en otros sistemas.
+- Facilita la desinstalación de paquetes.
+
+### Acciones para mejorar la Seguridad del Kernel
+Para reforzar la seguridad del kernel, podemos tomar ciertas acciones como impedir la carga de módulos no firmados. Protegiendo al sistema contra módulos maliciosos como los `rootkits` que se insertan en el kernel para ocultar procesos, archivos o actividades.
+
+
+Para autofirmar los módulos de kernel construidos de forma privada para su uso con RHEL 8 que incluye, cargadores de arranque firmados, granos firmados y módulos del kernel firmados; En sistemas basados en UEFI con arranque seguro, es necesario:
+
+#### Autentificar un módulo de Kernel
+Cuando se carga el módulo, en RHEL 8 se comprueba la firma del mismo con las claves públicas X.509 en `.builtin_trusted_keys` (Claves públicas integradas en el kernel), `.platform` (Claves de proveedores de plataformas y claves personalizadas) y en `.blacklist` (lista de claves revocadas).
+
+1. **Generar un par de claves X.509**
+```bash
+  openssl req -new -x509 -newkey rsa:2048 -keyout MOK.priv -outform DER -out MOK.der -nodes -days 36500 -subj "/CN=MiClave/"
+```
+
+2. **Registrar la clave pública con el sistema (MOK)**
+```bash
+  sudo mokutil --import MOK.der
+```
+3. **Firmar el módulo del kernel**
+```bash
+  sudo /usr/src/kernels/$(uname -r)/scripts/sign-file sha256 MOK.priv MOK.der my_module.ko
+```
+
+4. **Instalar y cargar el módulo firmado:**
+```bash
+  sudo cp my_module.ko /lib/modules/$(uname -r)/extra/
+  sudo depmod -a
+  sudo modprobe my_module
+```
+
+5. **Verificar que se haya cargado correctamente**
+```bash
+  lsmod | grep my_module
+```
+
+## Desafío 2
+
+###  Espacio de Usuario vs Espacio del Kernel
+- **Programa (Espacio de Usuario)**:
+  - Utiliza **llamadas al sistema** para interactuar con el kernel (por ejemplo: `open()`, `read()`, `write()`, `ioctl()`, etc.).
+  - Accede a bibliotecas de alto nivel (`glibc`, `libc`, etc.).
+  - No puede acceder directamente al hardware ni a estructuras del kernel.
+
+- **Módulo (Espacio del Kernel)**:
+  - Tiene acceso a funciones internas del kernel como `printk()`, `copy_to_user()`, `request_irq()`, etc.
+  - Interactúa directamente con el hardware y administra recursos críticos.
+  - Puede definir funciones como `init_module()` y `cleanup_module()` para inicialización y limpieza de los módulos.
+
+
+| Característica       | Espacio de Usuario                         | Espacio del Kernel                        |
+|----------------------|--------------------------------------------|-------------------------------------------|
+| Privilegios          | Restringidos                               | Máximos (modo supervisor)                 |
+| Acceso a hardware    | No permitido directamente                  | Permitido                                 |
+| Estabilidad del sistema | No afecta directamente al sistema       | Un error puede colapsar el sistema        |
+| Comunicación         | Mediante llamadas al sistema               | Directa con recursos del sistema          |
+
+
+### Espacio de Datos
+
+- **Espacio de datos del usuario**: 
+  - Corresponde a la memoria del proceso en ejecución (heap, stack, datos, código).
+  - El kernel no puede acceder directamente, debe usar funciones como `copy_from_user()`.
+
+- **Espacio de datos del kernel**: 
+  - Compartido entre todos los procesos en modo kernel.
+  - Contiene estructuras como tablas de procesos, buffers de E/S, estructuras de módulos, etc.
+
+
+### Drivers y el contenido de `/dev`
+
+- **Drivers (controladores)**:
+  - Son módulos del kernel que permiten la comunicación entre el sistema operativo y el hardware.
+  - Implementan operaciones como `open()`, `read()`, `write()`, `release()` para interactuar con dispositivos.
+
+- **Contenido de `/dev`**:
+  - Contiene archivos especiales que representan dispositivos del sistema.
+  - Ejemplos:
+    - `/dev/null`: Dispositivo que descarta cualquier dato escrito.
+    - `/dev/sda`: Disco duro o SSD.
+    - `/dev/tty`: Terminales virtuales.
+    - `/dev/random` y `/dev/urandom`: Generadores de números aleatorios.
+  - Los archivos en `/dev` se comunican con los drivers correspondientes mediante los *major* y *minor numbers*.
+  
 ## **Desafío 3**
 
 El principal desafío de este desafío es configurar el entorno de desarrollo necesario para compilar, probar y analizar módulos del kernel en Linux.
@@ -522,125 +635,7 @@ Este trazado muestra cómo un programa tan simple como `helloworld`:
 
 Estas llamadas son **interfaces entre el espacio de usuario y el kernel**. Toda operación importante que hace un programa (entradas/salidas, memoria, procesos, archivos) **pasa por el kernel** mediante estas llamadas.
 
----
-=======
-<h1 align="center">📘 Universidad Nacional de Córdoba</h1>
-
-<p align="center">
-  <img src="https://cybersecurityhub.cordoba.gob.ar/wp-content/uploads/2022/02/FCEFyN-Duotono_tagline-Javier-Jorge.png" width="400"/>
-</p>
-
----
-
-<h3 align="center">💻 SISTEMAS DE COMPUTACIÓN</h3>
-<h4 align="center">Trabajo Práctico N°4: <em>Módulos de Kernel & Llamadas a sistema</em></h4>
-<h4 align="center">Grupo: <strong>uWuntu</strong> 🚀</h4>
-
----
-
-# Introducción
-
-Los módulos de kernel son fragmentos de código que permiten ampliar las funcionalidades del núcleo del sistema operativo sin necesidad de recompilar ni reiniciar todo el kernel. Esto es especialmente útil cuando se desea agregar nuevas funciones —como soporte para un dispositivo de hardware— sin modificar directamente el núcleo principal, que suele ser complejo y monolítico. 
-
-Dado que estos módulos interactúan directamente con el núcleo, también representan la posibilidad de tener vulnerabilidades o pueden ser creados para usos maliciosos. Para mitigar estos riesgos, los sistemas implementan mecanismos de seguridad como la verificación mediante firmas digitales o claves, asegurando que solo módulos autorizados o firmados puedan ser cargados.
-
-Las llamadas al sistema son la forma principal que los programas interactúan con el núcleo del sistema operativo, mediante esto, es posible que una aplicación soliicite servicios fundamentales como acceso a archivos, comunicación entre los procesos, adignación de memoria o el control de los dispositivos. Actúa como un puente seguro entre el espacio de usuario y el espacio del kernel, esto evita que los programas accedan directamente a los recursos del sistema operativo por razones de seguridad y estabilidad, cuando un proceso necesita realizar una operación privilegiada,  invoca una llamada al sistema específica, y el kernel se encarga de ejecutarla de forma controlada.
-
-# Desarrollo
-
-## Desafío 1
-
-La herramienta que nos facilida la creación de paquetes `.deb`, `.rpm` o `.tgz` es **checkinstall**, a partir de la instalación tradicional utilizando `make install`. En vez de copiar los archivos al sistema, intercepta esa acción y genera un paquete instalable, compatible con el gestor de paquetes de la distribución.
-- Permite conocer los paquetes instalados.
-- Mejora la distribución e instalación de paquetes en otros sistemas.
-- Facilita la desinstalación de paquetes.
-
-### Proceso de empaquetamiento
-
-### Acciones para mejorar la Seguridad del Kernel
-Para reforzar la seguridad del kernel, podemos tomar ciertas acciones como impedir la carga de módulos no firmados. Protegiendo al sistema contra módulos maliciosos como los `rootkits` que se insertan en el kernel para ocultar procesos, archivos o actividades.
-
-
-Para autofirmar los módulos de kernel construidos de forma privada para su uso con RHEL 8 que incluye, cargadores de arranque firmados, granos firmados y módulos del kernel firmados; En sistemas basados en UEFI con arranque seguro, es necesario:
-
-#### Autentificar un módulo de Kernel
-Cuando se carga el módulo, en RHEL 8 se comprueba la firma del mismo con las claves públicas X.509 en `.builtin_trusted_keys` (Claves públicas integradas en el kernel), `.platform` (Claves de proveedores de plataformas y claves personalizadas) y en `.blacklist` (lista de claves revocadas).
-
-1. **Generar un par de claves X.509**
-```bash
-  openssl req -new -x509 -newkey rsa:2048 -keyout MOK.priv -outform DER -out MOK.der -nodes -days 36500 -subj "/CN=MiClave/"
-```
-
-2. **Registrar la clave pública con el sistema (MOK)**
-```bash
-  sudo mokutil --import MOK.der
-```
-3. **Firmar el módulo del kernel**
-```bash
-  sudo /usr/src/kernels/$(uname -r)/scripts/sign-file sha256 MOK.priv MOK.der my_module.ko
-```
-
-4. **Instalar y cargar el módulo firmado:**
-```bash
-  sudo cp my_module.ko /lib/modules/$(uname -r)/extra/
-  sudo depmod -a
-  sudo modprobe my_module
-```
-
-5. **Verificar que se haya cargado correctamente**
-```bash
-  lsmod | grep my_module
-```
-
-## Desafío 2
-
-###  Espacio de Usuario vs Espacio del Kernel
-- **Programa (Espacio de Usuario)**:
-  - Utiliza **llamadas al sistema** para interactuar con el kernel (por ejemplo: `open()`, `read()`, `write()`, `ioctl()`, etc.).
-  - Accede a bibliotecas de alto nivel (`glibc`, `libc`, etc.).
-  - No puede acceder directamente al hardware ni a estructuras del kernel.
-
-- **Módulo (Espacio del Kernel)**:
-  - Tiene acceso a funciones internas del kernel como `printk()`, `copy_to_user()`, `request_irq()`, etc.
-  - Interactúa directamente con el hardware y administra recursos críticos.
-  - Puede definir funciones como `init_module()` y `cleanup_module()` para inicialización y limpieza de los módulos.
-
-
-| Característica       | Espacio de Usuario                         | Espacio del Kernel                        |
-|----------------------|--------------------------------------------|-------------------------------------------|
-| Privilegios          | Restringidos                               | Máximos (modo supervisor)                 |
-| Acceso a hardware    | No permitido directamente                  | Permitido                                 |
-| Estabilidad del sistema | No afecta directamente al sistema       | Un error puede colapsar el sistema        |
-| Comunicación         | Mediante llamadas al sistema               | Directa con recursos del sistema          |
-
-
-### Espacio de Datos
-
-- **Espacio de datos del usuario**: 
-  - Corresponde a la memoria del proceso en ejecución (heap, stack, datos, código).
-  - El kernel no puede acceder directamente, debe usar funciones como `copy_from_user()`.
-
-- **Espacio de datos del kernel**: 
-  - Compartido entre todos los procesos en modo kernel.
-  - Contiene estructuras como tablas de procesos, buffers de E/S, estructuras de módulos, etc.
-
-
-### Drivers y el contenido de `/dev`
-
-- **Drivers (controladores)**:
-  - Son módulos del kernel que permiten la comunicación entre el sistema operativo y el hardware.
-  - Implementan operaciones como `open()`, `read()`, `write()`, `release()` para interactuar con dispositivos.
-
-- **Contenido de `/dev`**:
-  - Contiene archivos especiales que representan dispositivos del sistema.
-  - Ejemplos:
-    - `/dev/null`: Dispositivo que descarta cualquier dato escrito.
-    - `/dev/sda`: Disco duro o SSD.
-    - `/dev/tty`: Terminales virtuales.
-    - `/dev/random` y `/dev/urandom`: Generadores de números aleatorios.
-  - Los archivos en `/dev` se comunican con los drivers correspondientes mediante los *major* y *minor numbers*.
-
-## ¿Qué es un Segmentation Fault?
+### **7. ¿Qué es un Segmentation Fault?**
 
 Un Segmentation Fault (fallo de segmentación) es un error en tiempo de ejecución que ocurre cuando un programa intenta acceder a una región de memoria que no tiene permiso para usar. Esto incluye situaciones como:
 
@@ -655,7 +650,7 @@ Cuando esto sucede:
 
 - El programa, en el espacio de usuario, puede definir un manejador de señales (por ejemplo con `sigaction`) para interceptar la señal SIGSEGV. Esto permite, por ejemplo, imprimir información de diagnóstico antes de que el proceso finalice, aunque no es recomendable intentar continuar la ejecución.
 
-### Ejemplo de código que genera un segmentation fault
+#### Ejemplo de código que genera un segmentation fault
 
 ```c
 int *ptr = NULL;
@@ -666,15 +661,15 @@ En este ejemplo, el puntero `ptr` apunta a `NULL`, y cualquier intento de escrit
 
 > Este tipo de fallos son una forma en que el kernel protege la integridad del sistema, evitando que los programas mal diseñados o defectuosos afecten a otros procesos o al propio sistema operativo.
 
-## Análisis de llamadas al sistema en un programa Hello World en C
+### **8. Análisis de llamadas al sistema en un programa Hello World en C**
 
-### Introducción
+#### Introducción
 
 Este sección del documento examina las llamadas al sistema (*syscalls*) realizadas por un programa elemental en lenguaje C cuya única función es imprimir el mensaje "Hello, world!" en pantalla. Aunque aparentemente simple, este programa permite evidenciar la interacción fundamental entre el espacio de usuario y el kernel del sistema operativo a través de la interfaz de llamadas al sistema.
 
 El análisis se realizó utilizando `strace`, una herramienta estándar en entornos Linux para rastrear y diagnosticar las llamadas al sistema que ejecuta un proceso durante su funcionamiento.
 
-### Compilación del programa
+#### Compilación del programa
 
 Se creó un archivo fuente en C con el siguiente contenido:
 
@@ -693,7 +688,7 @@ El programa se compiló utilizando GCC con la siguiente instrucción:
 gcc -Wall -o hello hello.c
 ```
 
-### Seguimiento detallado con `strace -tt`
+#### Seguimiento detallado con `strace -tt`
 
 Para observar las llamadas al sistema con marcas temporales precisas, se ejecutó:
 
@@ -810,13 +805,13 @@ El resumen estadístico revela aspectos importantes sobre el comportamiento del 
 
 - La llamada **`write`**, responsable de imprimir nuestro mensaje, aparece con tiempo prácticamente nulo (0,00%) debido a su simplicidad y rapidez de ejecución.
 
-## Implementación del mismo Hello World como módulo del kernel firmado
+### **9. Implementación del mismo Hello World como módulo del kernel firmado**
 
 Como continuación del análisis de llamadas al sistema, se procedió a implementar un módulo del kernel que imprime "Hello, Kernel World!" al cargarse y "Goodbye, Kernel World!" al descargarse. Para asegurar la compatibilidad con sistemas con Secure Boot habilitado, también se firmó dicho módulo.
 
-### Creación del módulo del kernel
+#### Creación del módulo del kernel
 
-#### Código fuente `hellomodule.c`
+##### Código fuente `hellomodule.c`
 
 ```c
 #include <linux/module.h>
@@ -860,9 +855,9 @@ make
 
 Esto generará `hellomodule.ko`.
 
-### Firma del módulo para Secure Boot
+#### Firma del módulo para Secure Boot
 
-#### 1. Crear clave y certificado
+##### 1. Crear clave y certificado
 
 ```bash
 mkdir ~/modsign
@@ -902,7 +897,7 @@ openssl req -new -x509 -newkey rsa:2048 -keyout MOK.priv -outform DER -out MOK.d
 Este certificado será utilizado para firmar módulos del kernel en un entorno con Secure Boot habilitado.</p>
 
 
-#### 2. Registrar la clave con `mokutil`
+##### 2. Registrar la clave con `mokutil`
 
 ```bash
 sudo mokutil --import MOK.der
@@ -949,7 +944,7 @@ Se solicita una contraseña temporal que se usará para confirmar la operación 
 </p>
 <p align="center"><strong>Figura 7:</strong> Selección final de la opción "Enroll MOK" para completar el registro y permitir la carga de módulos firmados con esa clave.</p>
 
-#### 2.1 Verificación de Secure Boot
+##### 2.1 Verificación de Secure Boot
 
 Antes de firmar e intentar cargar el módulo, es fundamental verificar que el sistema tenga Secure Boot activado, ya que esto garantiza que solo se permitirán módulos del kernel con firmas válidas.
 
@@ -973,7 +968,7 @@ Como resultado, cualquier módulo `.ko` que se desee cargar deberá estar firmad
 > Si `SecureBoot` no está activado, el sistema permitirá la carga de módulos sin firma.
 
 
-#### 3. Firmar el módulo
+##### 3. Firmar el módulo
 
 Antes de ejecutar este comando, asegurate de estar ubicado en la carpeta que contiene el archivo `hellomodule.ko`, ya que el script `sign-file` espera encontrar el módulo en el directorio actual.
 
@@ -981,7 +976,7 @@ Antes de ejecutar este comando, asegurate de estar ubicado en la carpeta que con
 sudo /usr/src/linux-headers-$(uname -r)/scripts/sign-file sha256 ~/modsign/MOK.priv ~/modsign/MOK.der hellomodule.ko
 ```
 
-#### 4. Verificar la firma
+##### 4. Verificar la firma
 
 ```bash
 modinfo hellomodule.ko | grep -i signer
@@ -994,7 +989,7 @@ modinfo hellomodule.ko | grep -i signer
 <p align="center"><strong>Figura 9:</strong> Verificación de la firma del módulo `hellomodule.ko` mediante `modinfo`.  
 Se confirma que fue firmado correctamente con la clave "My Kernel Module Signing Key by UWU Team", coincidiendo con el certificado MOK registrado.</p>
 
-#### 5. Cargar y verificar el módulo firmado
+##### 5. Cargar y verificar el módulo firmado
 
 Antes de ejecutar los siguientes comandos, asegurate de estar ubicado en la carpeta donde se encuentra el archivo `hellomodule.ko`, ya que `insmod` espera encontrar el módulo en el directorio actual o con una ruta válida.
 
@@ -1034,6 +1029,26 @@ Este proceso confirma que tanto la función de inicialización (`init`) como la 
 
 <p align="center"><strong>Figura 10:</strong> Salida del comando `dmesg` que muestra los mensajes del kernel al cargar y descargar el módulo.  
 Se observa que el módulo fue cargado correctamente, ejecutando "Hello, Kernel World!", y posteriormente removido, mostrando "Goodbye, Kernel World!".</p>
+
+### **10. ¿Que pasa si mi compañero con secure boot habilitado intenta cargar un módulo firmado por mi?**
+
+### **11. Dada la siguiente nota**
+[Nota](https://arstechnica.com/security/2024/08/a-patch-microsoft-spent-2-years-preparing-is-making-a-mess-for-some-linux-users/)
+
+
+**• ¿Cuál fue la consecuencia principal del parche de Microsoft sobre GRUB en sistemas con arranque dual (Linux y Windows)?**
+
+El parche de Microsoft, diseñado para mitigar una vulnerabilidad crítica en el gestor de arranque GRUB, provocó que muchos sistemas con arranque dual dejaran de iniciar correctamente Linux. Esto se debió a que el parche revocaba versiones antiguas de GRUB que aún usaban muchas distribuciones, lo que hacía que el firmware UEFI impidiera su ejecución.
+
+
+**• ¿Qué implicancia tiene desactivar Secure Boot como solución al problema descrito en el artículo?**
+
+Desactivar **Secure Boot** permite arrancar versiones no firmadas de GRUB y así recuperar el acceso a Linux. Sin embargo, esto también desactiva una protección clave del sistema, exponiéndolo a posibles ataques de software malicioso durante el arranque.
+
+**• ¿Cuál es el propósito principal del Secure Boot en el proceso de arranque de un sistema?**
+
+El propósito principal de **Secure Boot** es asegurar que solo se ejecute software firmado y verificado criptográficamente durante el arranque. Esto protege al sistema contra malware de bajo nivel, como rootkits o bootkits.
+
 
 # Bibliografía
 
