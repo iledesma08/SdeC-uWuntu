@@ -300,7 +300,6 @@ A partir de ese punto, se puede ejecutar paso a paso (`stepi`) y observar cómo 
 
 <p align="center"><b>Fig 7.</b> Segundo breakpoint alcanzado en 0x7C05, antes de comenzar la impresión del mensaje.</p>
 
----
 
 #  Desafío Final: Modo Protegido
 
@@ -449,4 +448,9 @@ Por ejemplo:
 
  [El mundo del Modo Protegido](http://www.osdever.net/tutorials/view/the-world-of-protected-mode)
 
+## Bibliografías
+ [Paso Modo Protegido x86](http://sistemasdecomputacionunc.blogspot.com/2014/04/paso-modo-protegido-x86.html)
+ [Tutorial sobre la GDT](https://wiki.osdev.org/GDT_Tutorial)
+ [Estructuras de Datos para GDT y LDT](https://stackoverflow.com/questions/25762625/file-in-which-the-data-structure-for-global-descriptor-and-local-descriptor-tabl)  
+ [El mundo del Modo Protegido](http://www.osdever.net/tutorials/view/the-world-of-protected-mode)
  [Ejemplos bare-metal de x86](https://github.com/cirosantilli/x86-bare-metal-examples)
