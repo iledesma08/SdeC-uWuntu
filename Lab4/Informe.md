@@ -458,15 +458,157 @@ Comparar el resultado de `modinfo des_generic.ko` con `modinfo mimodulo.ko` perm
 
 ---
 
-### **2. ¿Qué divers/modulos estan cargados en sus propias pc? Comparar y explicar diferencias**
+### **2. ¿Qué drivers/modulos estan cargados en sus propias pc? Comparar y explicar diferencias**
 
-[TODO]
+Con base en los archivos `alfonso_modules.txt`, `ignacio_modules.txt`, `ivan_modules.txt` y sus respectivas comparaciones (`diff_*.txt`), se puede responder lo siguiente:
+
+| Usuario     | Características principales del sistema (por los módulos cargados)                                                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Alfonso** | Usa GPU AMD (con `amdgpu` y `radeon`), WiFi Realtek (`rtl8188ee`), tiene módulos para `kvm_amd`, y probablemente no use ZFS. Audio clásico (`snd_hda_intel`).                                                            |
+| **Ignacio** | Usa Intel + GPU integrada (`i915`), almacenamiento ZFS (`zfs`, `spl`), stack completo de audio SOF de Intel, Bluetooth (`btusb`), y módulos para `iwlmvm` (Intel WiFi).                                                  |
+| **Iván**    | Usa AMD con `amdgpu`, stack de audio SOF AMD (`snd_sof_amd_*`), red Realtek (`r8169`), soporte para virtualización (`kvm_amd`), módulos RAID y Btrfs, y más orientado a redes y pruebas (`bridge`, `nf_tables`, `xt_*`). |
+
+#### Drivers de video (GPU)
+
+* **Alfonso**: Usa **`amdgpu` y `radeon`**, indicando GPU AMD antigua o híbrida.
+* **Ignacio**: Usa **`i915`**, driver del núcleo para GPUs Intel integradas.
+* **Iván**: Solo usa **`amdgpu`**, con múltiples extensiones (Vangogh, Rembrandt, Renoir).
+
+#### Audio
+
+* **Alfonso**: Usa **`snd_hda_intel`** y codecs Realtek típicos de placas comunes.
+* **Ignacio**: Tiene stack **SOF Intel** completo (`snd_sof_pci_intel_cnl`, `snd_sof_intel_hda_common`).
+* **Iván**: Usa el stack **SOF AMD** (`snd_sof_amd_*`) y también `snd_usb_audio`.
+
+#### Red y WiFi
+
+* **Alfonso**: Módulos de WiFi Realtek (`rtl8188ee`, `rtlwifi`).
+* **Ignacio**: WiFi Intel (`iwlmvm`, `iwlwifi`) + `e1000e` (Ethernet Intel).
+* **Iván**: WiFi Intel (`iwlmvm`) + `r8169` (Realtek Ethernet) y más módulos de red (`nf_nat`, `bridge`, `xt_set`).
+
+#### Sistemas de archivos y almacenamiento
+
+* **Ignacio**: Usa **ZFS**, tiene `spl`, y otros módulos como `btrfs`.
+* **Iván**: Usa también `btrfs` y una gran variedad de módulos RAID (`raid456`, `xor`, etc.).
+* **Alfonso**: No muestra módulos relacionados con ZFS o RAID.
+
+#### Dispositivos de entrada y extra
+
+* **Ignacio**: Tiene `wacom`, `hid_sensor_hub`, `thinkpad_acpi`, lo que sugiere un portátil Lenovo moderno.
+* **Iván**: Tiene soporte `hid_logitech`, `i2c_hid`, `amd_pmc`, etc.
+* **Alfonso**: Tiene módulos como `hp_wmi` y `wireless_hotkey`, lo que sugiere una notebook HP.
+
+#### Módulos comunes
+
+Algunos módulos están cargados en las tres PCs, como:
+
+* `snd`, `snd_hda_codec_generic`, `snd_hda_codec_hdmi`, `snd_seq`, `snd_timer`
+* `mac80211`, `cfg80211` (comunes en sistemas con WiFi)
+* `cec`, `video`, `wmi`, `drm_display_helper`
+* `kvm`, `kvm_amd` (virtualización)
+* `aesni_intel`, `cryptd`, `crypto_simd` (aceleración criptográfica)
+* `rc_core`, `input_leds`, `mac_hid`, `joydev`, `efi_pstore`
+
+#### Perfiles de Uso
+
+Cada computadora tiene un conjunto de drivers claramente diferente:
+
+* **Alfonso**: Perfil clásico AMD, Realtek WiFi, sin ZFS, drivers de sonido tradicionales.
+* **Ignacio**: Perfil moderno Intel con GPU integrada, audio SOF, ZFS y periféricos avanzados (Wacom, sensores).
+* **Iván**: Perfil técnico con módulos de red avanzados, stack completo de AMD SOF, soporte RAID/Btrfs.
 
 ---
 
 ### **3. ¿Cuales no están cargados pero están disponibles? Que pasa cuando el driver de un dispositivo no está disponible?**
 
-[TODO]
+Para **ver los módulos disponibles pero no cargados** en un sistema Linux, se siguen estos pasos:
+
+#### 1. Ver los módulos actualmente cargados
+
+```bash
+lsmod
+```
+
+Esto lista todos los módulos activos en el kernel en este momento.
+
+#### 2. Ver todos los módulos disponibles en el sistema
+
+```bash
+find /lib/modules/$(uname -r) -type f -name "*.ko*" | sed 's|.*/||;s|\.ko.*$||' | sort > disponibles.txt
+```
+
+Esto extrae el nombre de todos los módulos `.ko` (Kernel Object) disponibles en disco para tu versión del kernel y los guarda ordenados.
+
+#### 3. Extraer los nombres de los módulos cargados
+
+```bash
+lsmod | awk '{print $1}' | tail -n +2 | sort > cargados.txt
+```
+
+Esto guarda los nombres de los módulos actualmente cargados, omitiendo la cabecera.
+
+#### 4. Comparar y obtener los módulos que están disponibles pero no cargados
+
+```bash
+comm -23 disponibles.txt cargados.txt > no_cargados.txt
+```
+
+> 📂 El archivo `no_cargados.txt` contendrá la lista de módulos que están instalados en tu sistema pero que **no están cargados actualmente** en el kernel, entre ellos:
+
+* **Drivers de red**: `atl1`, `b44`, `8139cp`, `r8169`, `bnx2x`
+* **Drivers de audio**: `snd-usb-audio`, `snd-emu10k1`, `snd-hda-codec-cirrus`
+* **Drivers de video**: `radeon`, `nouveau`, `gma500_gfx`
+* **Drivers de dispositivos USB**: `cp210x`, `ftdi_sio`, `usbserial`, `usbtouchscreen`
+* **Módulos de sistemas de archivos**: `nfs`, `btrfs`, `zfs`, `jfs`, `ocfs2`
+* **Drivers para sensores y periféricos**: `wacom`, `bma400_i2c`, `sht3x`, `hp_accel`
+
+Estos módulos están instalados en el sistema y **pueden cargarse automáticamente** si el hardware asociado se conecta o se detecta. También pueden cargarse manualmente usando:
+
+```bash
+sudo modprobe <nombre_modulo>
+```
+
+#### ¿Qué pasa si el driver de un dispositivo no está disponible?
+
+Existen dos escenarios:
+
+##### 1. **El driver existe pero no está cargado**
+
+* El kernel puede cargarlo **automáticamente** mediante `udev`.
+* Alternativamente, se puede cargar con `modprobe`.
+* Una vez cargado, el dispositivo funciona normalmente.
+
+##### 2. **El driver no está presente en el sistema**
+
+* El dispositivo **no funcionará** (ni red, ni audio, ni WiFi, etc.).
+* No habrá "Kernel driver in use" al consultar con `lspci -k` o `lsusb -v`.
+* Será necesario:
+
+  * Instalar el driver apropiado (`.ko`, `.deb`, etc.).
+  * A veces, compilarlo o firmarlo si Secure Boot está habilitado.
+
+#### Ejemplo práctico
+
+Si el sistema tiene una placa de red `Realtek RTL8188EE`, pero el módulo `rtl8188ee` no está cargado, se puede ver lo siguiente:
+
+```bash
+lspci -k | grep -A 3 RTL8188
+Kernel modules: rtl8188ee
+```
+
+Pero **sin** "Kernel driver in use", lo cual indica que el módulo está **disponible pero no cargado**.
+
+Al hacer:
+
+```bash
+sudo modprobe rtl8188ee
+```
+
+el sistema cargará el driver y la placa comenzará a funcionar.
+
+* El sistema cuenta con **miles de módulos disponibles pero no cargados**, lo cual le permite adaptarse a distintos tipos de hardware de forma dinámica.
+* Si un dispositivo no tiene su driver cargado, puede activarse automáticamente o manualmente.
+* Si el driver **ni siquiera está disponible**, el dispositivo **no funcionará** hasta que se lo instale.
 
 ---
 
@@ -1031,6 +1173,29 @@ Este proceso confirma que tanto la función de inicialización (`init`) como la 
 Se observa que el módulo fue cargado correctamente, ejecutando "Hello, Kernel World!", y posteriormente removido, mostrando "Goodbye, Kernel World!".</p>
 
 ### **10. ¿Que pasa si mi compañero con secure boot habilitado intenta cargar un módulo firmado por mi?**
+
+<p align="center">
+  <img src="./Img/HelloWorldSB.jpg" width="600"/>
+</p>
+
+<p align="center"><strong>Figura 11:</strong> Intento fallido de carga del módulo firmado en otra PC.  
+Se observa que el módulo es rechazado por el sistema y no puede ser cargado correctamente.</p>
+
+Si un compañero intenta cargar un módulo que fue firmado con una clave generada en otra computadora el intento fallará, y el sistema muestra un error `insmod: ERROR: could not insert module hellomodule.ko: Key was rejected by service`.
+
+Esto ocurre porque, aunque el módulo esté firmado, la firma se realizó con una clave privada que **no está registrada en el sistema del compañero mediante MOK (Machine Owner Key)**.
+
+- Secure Boot permite cargar solo módulos firmados con claves que estén registradas en el firmware o mediante el gestor MOK.
+- Al intentar cargar un módulo firmado por otra persona, la clave no coincide con ninguna clave autorizada en el sistema local.
+- El sistema lo rechaza automáticamente por seguridad, evitando que se cargue código arbitrario en el kernel.
+
+En definitiva, si un módulo fue firmado por otra persona y el sistema tiene Secure Boot habilitado, no podrá cargarse a menos que:
+
+1. Esa clave pública esté registrada en tu sistema mediante MOK, o
+
+2. Se desactive Secure Boot en la configuración de UEFI.
+
+Esto garantiza que el kernel solo ejecute código verificado por el usuario o fabricante, protegiendo el sistema contra modificaciones no autorizadas.
 
 ### **11. Dada la siguiente nota**
 [Nota](https://arstechnica.com/security/2024/08/a-patch-microsoft-spent-2-years-preparing-is-making-a-mess-for-some-linux-users/)
