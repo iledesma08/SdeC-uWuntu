@@ -407,6 +407,10 @@ Desde la bibliografía:
 
 La aplicación `tp5_gui.py` demuestra la utilidad de un Character Device Driver como **interfaz simple y efectiva para graficar señales simuladas desde el kernel**.
 
+<p align="center">
+  <img src="Img/gui.gif" alt="TP5 Corriendo">
+</p>
+
 ---
 
 # Bibliografía
