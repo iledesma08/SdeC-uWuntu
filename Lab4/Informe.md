@@ -33,7 +33,7 @@ La herramienta que nos facilida la creación de paquetes `.deb`, `.rpm` o `.tgz`
 Para reforzar la seguridad del kernel, podemos tomar ciertas acciones como impedir la carga de módulos no firmados. Protegiendo al sistema contra módulos maliciosos como los `rootkits` que se insertan en el kernel para ocultar procesos, archivos o actividades.
 
 
-Para autofirmar los módulos de kernel construidos de forma privada para su uso con RHEL 8 que incluye, cargadores de arranque firmados, granos firmados y módulos del kernel firmados; En sistemas basados en UEFI con arranque seguro, es necesario:
+Para autofirmar los módulos de kernel construidos de forma privada para su uso con RHEL 8 que incluye, bootloaders firmados, kernels firmados y módulos del kernel firmados; En sistemas basados en UEFI con arranque seguro, es necesario:
 
 #### Autentificar un módulo de Kernel
 Cuando se carga el módulo, en RHEL 8 se comprueba la firma del mismo con las claves públicas X.509 en `.builtin_trusted_keys` (Claves públicas integradas en el kernel), `.platform` (Claves de proveedores de plataformas y claves personalizadas) y en `.blacklist` (lista de claves revocadas).
