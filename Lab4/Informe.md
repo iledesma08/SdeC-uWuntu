@@ -24,45 +24,185 @@ Las llamadas al sistema son la forma principal que los programas interactúan co
 
 ## Desafío 1
 
-La herramienta que nos facilida la creación de paquetes `.deb`, `.rpm` o `.tgz` es **checkinstall**, a partir de la instalación tradicional utilizando `make install`. En vez de copiar los archivos al sistema, intercepta esa acción y genera un paquete instalable, compatible con el gestor de paquetes de la distribución.
-- Permite conocer los paquetes instalados.
-- Mejora la distribución e instalación de paquetes en otros sistemas.
-- Facilita la desinstalación de paquetes.
+## ¿Qué es Checkinstall?
 
-### Acciones para mejorar la Seguridad del Kernel
-Para reforzar la seguridad del kernel, podemos tomar ciertas acciones como impedir la carga de módulos no firmados. Protegiendo al sistema contra módulos maliciosos como los `rootkits` que se insertan en el kernel para ocultar procesos, archivos o actividades.
+**Checkinstall** es una herramienta que simplifica la creación de paquetes `.deb`, `.rpm` o `.tgz` a partir del proceso tradicional de instalación con `make install`. En lugar de copiar archivos directamente al sistema, intercepta esta acción y genera un paquete instalable compatible con el gestor de paquetes de la distribución.
+
+### Ventajas principales:
+- **Trazabilidad**: Permite conocer exactamente qué paquetes están instalados
+- **Portabilidad**: Mejora la distribución e instalación de software en otros sistemas
+- **Mantenimiento**: Facilita la desinstalación limpia de paquetes
+- **Integración**: Compatible con gestores de paquetes nativos (APT, YUM, etc.)
 
 
-Para autofirmar los módulos de kernel construidos de forma privada para su uso con RHEL 8 que incluye, bootloaders firmados, kernels firmados y módulos del kernel firmados; En sistemas basados en UEFI con arranque seguro, es necesario:
+## Tutorial Práctico: Hello World con Checkinstall
 
-#### Autentificar un módulo de Kernel
-Cuando se carga el módulo, en las distribuciones modernas con secure boot, se comprueba la firma del mismo con las claves públicas X.509 en `.builtin_trusted_keys` (Claves públicas integradas en el kernel), `.platform` (Claves de proveedores de plataformas y claves personalizadas) y en `.blacklist` (lista de claves revocadas).
+### Paso 1: Preparación del entorno
 
-1. **Generar un par de claves X.509**
+Primero, asegurémonos de tener `checkinstall` instalado:
+
 ```bash
-  openssl req -new -x509 -newkey rsa:2048 -keyout MOK.priv -outform DER -out MOK.der -nodes -days 36500 -subj "/CN=MiClave/"
+sudo apt install checkinstall
 ```
 
-2. **Registrar la clave pública con el sistema (MOK)**
-```bash
-  sudo mokutil --import MOK.der
-```
-3. **Firmar el módulo del kernel**
-```bash
-  sudo /usr/src/kernels/$(uname -r)/scripts/sign-file sha256 MOK.priv MOK.der my_module.ko
+### Paso 2: Crear los archivos fuente
+
+**Archivo `hello.c`:**
+```c
+#include <stdio.h>
+
+int main() {
+    printf("Hello, world!\n");
+    return 0;
+}
 ```
 
-4. **Instalar y cargar el módulo firmado:**
-```bash
-  sudo cp my_module.ko /lib/modules/$(uname -r)/extra/
-  sudo depmod -a
-  sudo modprobe my_module
+**Archivo `Makefile`:**
+```makefile
+CC=gcc
+CFLAGS=-Wall -Wextra -O2
+PREFIX=/usr/local
+BINDIR=$(PREFIX)/bin
+
+hello: hello.c
+	$(CC) $(CFLAGS) -o hello hello.c
+
+install: hello
+	install -d $(BINDIR)
+	install -m 755 hello $(BINDIR)/hello
+
+clean:
+	rm -f hello
+
+.PHONY: install clean
 ```
 
-5. **Verificar que se haya cargado correctamente**
+### Paso 3: Compilar el programa
+
 ```bash
-  lsmod | grep my_module
+make
 ```
+
+Esto generará el ejecutable `hello` en el directorio actual.
+
+### Paso 4: Crear el paquete con Checkinstall
+
+En lugar de ejecutar `sudo make install` directamente, utilizamos:
+
+```bash
+sudo checkinstall
+```
+
+**Checkinstall te solicitará información del paquete:**
+
+```
+Please write a description for the package.
+End your description with an empty line or EOF.
+>> Un programa Hello World de ejemplo
+
+*****************************************
+**** Debian package creation selected ***
+*****************************************
+
+This package will be built according to these values:
+
+0 -  Maintainer: [ root@hostname ]
+1 -  Summary: [ Un programa Hello World de ejemplo ]
+2 -  Name:    [ hello ]
+3 -  Version: [ 1.0-1 ]
+4 -  Release: [ 1 ]
+5 -  License: [ GPL ]
+6 -  Group:   [ checkinstall ]
+7 -  Architecture: [ amd64 ]
+8 -  Source location: [ hello ]
+9 -  Alternate source location: [ ]
+10 - Requires: [ ]
+11 - Provides: [ hello ]
+12 - Conflicts: [ ]
+13 - Replaces: [ ]
+```
+
+Puedes modificar cualquier valor ingresando su número y el nuevo valor.
+
+### Paso 5: Verificar la instalación
+
+```bash
+which hello
+
+hello
+
+dpkg -l | grep hello
+```
+
+### Paso 6: Gestión del paquete
+
+**Información del paquete:**
+```bash
+dpkg -s hello
+```
+
+**Listar archivos del paquete:**
+```bash
+dpkg -L hello
+```
+
+**Desinstalar limpiamente:**
+```bash
+sudo apt remove hello
+# o
+sudo dpkg -r hello
+```
+
+## Opciones Avanzadas de Checkinstall
+
+### Especificar tipo de paquete
+```bash
+# Crear paquete RPM
+sudo checkinstall --type=rpm
+
+# Crear tarball
+sudo checkinstall --type=slackware
+```
+
+### Parámetros útiles
+```bash
+sudo checkinstall \
+  --pkgname=hello-world \
+  --pkgversion=1.0 \
+  --maintainer="tu-email@ejemplo.com" \
+  --summary="Programa Hello World mejorado" \
+  --install=no  # Solo crea el paquete, no lo instala
+```
+
+### Instalación posterior
+```bash
+# Si usaste --install=no
+sudo dpkg -i hello-world_1.0-1_amd64.deb
+```
+
+## Casos de Uso Comunes
+
+### Para software compilado desde código fuente
+```bash
+./configure --prefix=/usr/local
+make
+sudo checkinstall make install
+```
+
+### Para scripts o archivos individuales
+```bash
+mkdir -p temp-install/usr/local/bin
+cp mi-script.sh temp-install/usr/local/bin/
+sudo checkinstall --fstrans=no cp -R temp-install/* /
+```
+
+## Mejores Prácticas
+
+1. **Siempre usa un Makefile apropiado** con targets `install` y `clean`
+2. **Especifica dependencias** si tu software las requiere
+3. **Usa prefijos estándar** como `/usr/local` para software compilado manualmente
+4. **Documenta tu paquete** con descripciones claras y versiones apropiadas
+5. **Prueba la desinstalación** para asegurar una eliminación limpia
 
 ## Desafío 2
 
@@ -999,7 +1139,20 @@ Esto generará `hellomodule.ko`.
 
 #### Firma del módulo para Secure Boot
 
-##### 1. Crear clave y certificado
+### Proceso de autenticación de módulos del kernel con Secure Boot
+
+Para reforzar la seguridad del kernel, podemos tomar ciertas acciones como impedir la carga de módulos no firmados. Protegiendo al sistema contra módulos maliciosos como los `rootkits` que se insertan en el kernel para ocultar procesos, archivos o actividades.
+
+En sistemas Linux con Secure Boot, para permitir la carga de módulos compilados y firmados de manera privada, es necesario que estos estén correctamente firmados digitalmente y que las claves correspondientes sean reconocidas por el sistema.
+
+#### 1. Autenticación de módulos en sistemas con Secure Boot
+
+Al intentar cargar un módulo, el kernel de Linux verifica su firma utilizando las claves públicas X.509 almacenadas en las siguientes ubicaciones:
+- `.builtin_trusted_keys`: claves integradas al kernel.
+- `.platform`: claves del fabricante y personalizadas.
+- `.blacklist`: claves revocadas.
+
+##### 1.1 Crear clave y certificado
 
 ```bash
 mkdir ~/modsign
@@ -1039,7 +1192,7 @@ openssl req -new -x509 -newkey rsa:2048 -keyout MOK.priv -outform DER -out MOK.d
 Este certificado será utilizado para firmar módulos del kernel en un entorno con Secure Boot habilitado.</p>
 
 
-##### 2. Registrar la clave con `mokutil`
+##### 1.2 Registrar la clave con `mokutil`
 
 ```bash
 sudo mokutil --import MOK.der
@@ -1086,7 +1239,7 @@ Se solicita una contraseña temporal que se usará para confirmar la operación 
 </p>
 <p align="center"><strong>Figura 7:</strong> Selección final de la opción "Enroll MOK" para completar el registro y permitir la carga de módulos firmados con esa clave.</p>
 
-##### 2.1 Verificación de Secure Boot
+##### 1.2.1 Verificación de Secure Boot
 
 Antes de firmar e intentar cargar el módulo, es fundamental verificar que el sistema tenga Secure Boot activado, ya que esto garantiza que solo se permitirán módulos del kernel con firmas válidas.
 
@@ -1110,7 +1263,7 @@ Como resultado, cualquier módulo `.ko` que se desee cargar deberá estar firmad
 > Si `SecureBoot` no está activado, el sistema permitirá la carga de módulos sin firma.
 
 
-##### 3. Firmar el módulo
+##### 1.3 Verificación de Secure Boot
 
 Antes de ejecutar este comando, asegurate de estar ubicado en la carpeta que contiene el archivo `hellomodule.ko`, ya que el script `sign-file` espera encontrar el módulo en el directorio actual.
 
@@ -1118,7 +1271,7 @@ Antes de ejecutar este comando, asegurate de estar ubicado en la carpeta que con
 sudo /usr/src/linux-headers-$(uname -r)/scripts/sign-file sha256 ~/modsign/MOK.priv ~/modsign/MOK.der hellomodule.ko
 ```
 
-##### 4. Verificar la firma
+##### 1.4 Verificar la firma
 
 ```bash
 modinfo hellomodule.ko | grep -i signer
@@ -1131,7 +1284,7 @@ modinfo hellomodule.ko | grep -i signer
 <p align="center"><strong>Figura 9:</strong> Verificación de la firma del módulo `hellomodule.ko` mediante `modinfo`.  
 Se confirma que fue firmado correctamente con la clave "My Kernel Module Signing Key by UWU Team", coincidiendo con el certificado MOK registrado.</p>
 
-##### 5. Cargar y verificar el módulo firmado
+##### 1.5 Cargar y verificar el módulo firmado
 
 Antes de ejecutar los siguientes comandos, asegurate de estar ubicado en la carpeta donde se encuentra el archivo `hellomodule.ko`, ya que `insmod` espera encontrar el módulo en el directorio actual o con una ruta válida.
 
