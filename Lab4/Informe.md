@@ -1137,7 +1137,7 @@ make
 
 Esto generará `hellomodule.ko`.
 
-#### Firma del módulo para Secure Boot
+### Firma del módulo para Secure Boot
 
 ### Proceso de autenticación de módulos del kernel con Secure Boot
 
