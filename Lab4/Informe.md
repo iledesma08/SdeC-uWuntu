@@ -36,7 +36,7 @@ Para reforzar la seguridad del kernel, podemos tomar ciertas acciones como imped
 Para autofirmar los módulos de kernel construidos de forma privada para su uso con RHEL 8 que incluye, bootloaders firmados, kernels firmados y módulos del kernel firmados; En sistemas basados en UEFI con arranque seguro, es necesario:
 
 #### Autentificar un módulo de Kernel
-Cuando se carga el módulo, en RHEL 8 se comprueba la firma del mismo con las claves públicas X.509 en `.builtin_trusted_keys` (Claves públicas integradas en el kernel), `.platform` (Claves de proveedores de plataformas y claves personalizadas) y en `.blacklist` (lista de claves revocadas).
+Cuando se carga el módulo, en las distribuciones modernas con secure boot, se comprueba la firma del mismo con las claves públicas X.509 en `.builtin_trusted_keys` (Claves públicas integradas en el kernel), `.platform` (Claves de proveedores de plataformas y claves personalizadas) y en `.blacklist` (lista de claves revocadas).
 
 1. **Generar un par de claves X.509**
 ```bash
