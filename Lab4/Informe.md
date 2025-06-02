@@ -823,127 +823,7 @@ Los **módulos del kernel** y los **programas de espacio de usuario** tienen pro
 
 ---
 
-### **6. ¿Cómo puede ver una lista de las llamadas al sistema que realiza un simple helloworld en c?**
-
-Se puede ver la lista de llamadas al sistema que realiza un programa en C (como un `helloworld.c`) usando **`strace`**, una herramienta que intercepta y muestra todas las llamadas al sistema realizadas por un proceso en Linux.
-
-#### 1. Crear un programa `helloworld.c`
-
-```c
-#include <stdio.h>
-
-int main() {
-    printf("Hola mundo\n");
-    return 0;
-}
-```
-
-#### 2. Compilarlo
-
-```bash
-gcc helloworld.c -o helloworld
-```
-
-#### 3. Ejecutar con `strace`
-
-```bash
-strace ./helloworld
-```
-
-Este comando mostrará **todas las llamadas al sistema** realizadas por el programa, incluyendo `write()`, `open()`, `mmap()`, `exit_group()`, entre otras.
-
-#### **Salida simplificada**
-
-```
-execve("./helloworld", ["./helloworld"], 0x7fffdc1f) = 0
-brk(NULL)                               = 0x564f1591d000
-mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = ...
-write(1, "Hola mundo\n", 11)            = 11
-exit_group(0)                           = 0
-```
-
-```bash
-execve("./helloworld", ["./helloworld"], 0x7fffdc1f) = 0
-```
-
-* **`execve`** es la llamada al sistema que el shell usa para ejecutar un binario.
-* Toma tres argumentos: la ruta del ejecutable (`"./helloworld"`), los argumentos (`["./helloworld"]`) y las variables de entorno.
-* El resultado `= 0` indica que la llamada fue exitosa.
-
-```bash
-brk(NULL) = 0x564f1591d000
-```
-
-* **`brk()`** es una llamada para gestionar el heap del proceso, es decir, la memoria dinámica.
-* En este caso, se consulta la posición actual del "break" del heap sin cambiarlo.
-* El resultado indica la dirección actual del heap.
-
-```bash
-mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = ...
-```
-
-* **`mmap()`** se usa para asignar páginas de memoria al proceso, típicamente para el stack, buffers o librerías dinámicas.
-* Está pidiendo 8192 bytes (una página de memoria) de forma anónima y privada.
-* `PROT_READ|PROT_WRITE` indica que puede leerse y escribirse.
-* `-1` y `0` indican que no está mapeando un archivo, sino que es memoria vacía.
-
-```bash
-write(1, "Hola mundo\n", 11) = 11
-```
-
-* **`write()`** es la llamada que realmente imprime el mensaje en pantalla.
-* El `1` es el descriptor del archivo correspondiente a **stdout**.
-* `"Hola mundo\n"` es el texto a imprimir, y `11` es la cantidad de bytes.
-* Devuelve `11`, lo que indica que se escribieron correctamente todos los bytes.
-
-Esto nos muestra que `printf()` no es más que una función de la biblioteca C que internamente **llama al sistema a través de `write()`**.
-
-```bash
-exit_group(0) = 0
-```
-
-* **`exit_group()`** termina el proceso y libera sus recursos.
-* El `0` indica que el programa finalizó correctamente.
-* Es la versión moderna de `exit()` para programas multihilo.
-
-#### **Resumen conceptual**
-
-Este trazado muestra cómo un programa tan simple como `helloworld`:
-
-1. Se ejecuta con `execve()`.
-2. Reserva memoria (`brk()`, `mmap()`).
-3. Escribe en pantalla (`write()`).
-4. Finaliza (`exit_group()`).
-
-Estas llamadas son **interfaces entre el espacio de usuario y el kernel**. Toda operación importante que hace un programa (entradas/salidas, memoria, procesos, archivos) **pasa por el kernel** mediante estas llamadas.
-
-### **7. ¿Qué es un Segmentation Fault?**
-
-Un Segmentation Fault (fallo de segmentación) es un error en tiempo de ejecución que ocurre cuando un programa intenta acceder a una región de memoria que no tiene permiso para usar. Esto incluye situaciones como:
-
-- Desreferenciar un puntero nulo
-- Escribir en una dirección de solo lectura
-- Acceder fuera de los límites de un array
-
-Cuando esto sucede:
-
-- El kernel, a través del sistema de memoria virtual y la MMU (Unidad de Gestión de Memoria), detecta la violación de acceso y genera una excepción.  
-  Esta excepción se traduce en el envío de una señal SIGSEGV al proceso. Si el proceso no tiene un manejador específico para esa señal, será terminado automáticamente y se puede generar un core dump para análisis posterior.
-
-- El programa, en el espacio de usuario, puede definir un manejador de señales (por ejemplo con `sigaction`) para interceptar la señal SIGSEGV. Esto permite, por ejemplo, imprimir información de diagnóstico antes de que el proceso finalice, aunque no es recomendable intentar continuar la ejecución.
-
-#### Ejemplo de código que genera un segmentation fault
-
-```c
-int *ptr = NULL;
-*ptr = 5;  // Intento de escritura en una dirección no válida
-```
-
-En este ejemplo, el puntero `ptr` apunta a `NULL`, y cualquier intento de escritura provoca un acceso inválido de memoria.
-
-> Este tipo de fallos son una forma en que el kernel protege la integridad del sistema, evitando que los programas mal diseñados o defectuosos afecten a otros procesos o al propio sistema operativo.
-
-### **8. Análisis de llamadas al sistema en un programa Hello World en C**
+### **6. Análisis de llamadas al sistema en un programa Hello World en C**
 
 #### Introducción
 
@@ -1087,7 +967,33 @@ El resumen estadístico revela aspectos importantes sobre el comportamiento del 
 
 - La llamada **`write`**, responsable de imprimir nuestro mensaje, aparece con tiempo prácticamente nulo (0,00%) debido a su simplicidad y rapidez de ejecución.
 
-### **9. Implementación del mismo Hello World como módulo del kernel firmado**
+### **7. ¿Qué es un Segmentation Fault?**
+
+Un Segmentation Fault (fallo de segmentación) es un error en tiempo de ejecución que ocurre cuando un programa intenta acceder a una región de memoria que no tiene permiso para usar. Esto incluye situaciones como:
+
+- Desreferenciar un puntero nulo
+- Escribir en una dirección de solo lectura
+- Acceder fuera de los límites de un array
+
+Cuando esto sucede:
+
+- El kernel, a través del sistema de memoria virtual y la MMU (Unidad de Gestión de Memoria), detecta la violación de acceso y genera una excepción.  
+  Esta excepción se traduce en el envío de una señal SIGSEGV al proceso. Si el proceso no tiene un manejador específico para esa señal, será terminado automáticamente y se puede generar un core dump para análisis posterior.
+
+- El programa, en el espacio de usuario, puede definir un manejador de señales (por ejemplo con `sigaction`) para interceptar la señal SIGSEGV. Esto permite, por ejemplo, imprimir información de diagnóstico antes de que el proceso finalice, aunque no es recomendable intentar continuar la ejecución.
+
+#### Ejemplo de código que genera un segmentation fault
+
+```c
+int *ptr = NULL;
+*ptr = 5;  // Intento de escritura en una dirección no válida
+```
+
+En este ejemplo, el puntero `ptr` apunta a `NULL`, y cualquier intento de escritura provoca un acceso inválido de memoria.
+
+> Este tipo de fallos son una forma en que el kernel protege la integridad del sistema, evitando que los programas mal diseñados o defectuosos afecten a otros procesos o al propio sistema operativo.
+
+### **8 y 9. Implementación del mismo Hello World como módulo del kernel firmado**
 
 Como continuación del análisis de llamadas al sistema, se procedió a implementar un módulo del kernel que imprime "Hello, Kernel World!" al cargarse y "Goodbye, Kernel World!" al descargarse. Para asegurar la compatibilidad con sistemas con Secure Boot habilitado, también se firmó dicho módulo.
 
